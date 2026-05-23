@@ -1,28 +1,72 @@
 version: '3.9'
+
 services:
-  forge-api:
-    build: .
-    ports: ["8000:8000"]
+  forge-api:  # Backend - FastAPI叛逆核心
+    build: ./backend
+    ports:
+      - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379
       - QDRANT_URL=http://qdrant:6333
-    depends_on: [redis, qdrant]
+      - SUPABASE_URL=http://supabase:5432  # 新增
+      - GROK_API_KEY=${GROK_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FRONTEND_URL=http://frontend:3000
+    depends_on:
+      - redis
+      - qdrant
+      - supabase
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [gpu] # 激活 GPU 算力
+              capabilities: [gpu]
+    volumes:
+      - ./backend:/app
+    command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:  # Next.js 15 前线视觉战场
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://forge-api:8000
+      - WS_URL=ws://forge-api:8000
+    depends_on:
+      - forge-api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
 
   redis:
-    image: redis/redis-stack:latest # 包含 Streams 和 Search
-    ports: ["6379:6379"]
-    
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   qdrant:
     image: qdrant/qdrant:latest
-    ports: ["6333:6333"]
-    volumes: ["qdrant_storage:/qdrant/storage"]
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+  supabase:  # 本地Supabase/Postgres（你仓库里有supabase文件夹）
+    image: supabase/postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+    volumes:
+      - supabase_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
 
 volumes:
   qdrant_storage:
+  redis_data:
+  supabase_data:
