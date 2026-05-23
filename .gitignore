@@ -3,19 +3,12 @@
 node_modules/
 
 # Build outputs
+.next/
 dist/
 build/
-target/
+out/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Virtual environments
-venv/
-.venv/
+# Environment variables
 .env
 .env.local
 .env.*
@@ -25,7 +18,6 @@ venv/
 .idea/
 *.swp
 *.swo
-*.tmp
 
 # Logs
 *.log
@@ -35,7 +27,57 @@ coverage/
 htmlcov/
 .coverage
 
-# OS files
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.nox/
+.pytest_cache/
+.mypy_cache/
+
+# Compiled and binary files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# System files
 .DS_Store
 Thumbs.db
 ```
