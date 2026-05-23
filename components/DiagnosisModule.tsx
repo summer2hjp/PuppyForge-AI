@@ -1,50 +1,174 @@
+// components/DiagnosisModule.tsx
+// ========================================
+// AI 实时诊断模块 - 多模态健康诊断引擎
+// ========================================
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { Upload, AlertTriangle, CheckCircle } from 'lucide-react';
+import { analyzePetPhoto } from '../lib/vision-analyzer';
+import { VisionAnalysisResult } from '../lib/vision-analyzer';
+
+interface DiagnosisState {
+  image: File | null;
+  preview: string | null;
+  analysis: VisionAnalysisResult | null;
+  loading: boolean;
+  error: string | null;
+}
 
 export default function DiagnosisModule() {
-  const [image, setImage] = useState<File | null>(null);
-  const [analysis, setAnalysis] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<DiagnosisState>({
+    image: null,
+    preview: null,
+    analysis: null,
+    loading: false,
+    error: null
+  });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
+      const file = e.target.files[0];
+      const preview = URL.createObjectURL(file);
+      
+      setState(prev => ({
+        ...prev,
+        image: file,
+        preview,
+        analysis: null,
+        error: null
+      }));
+    }
+  }, []);
+
+  const analyzeImage = async () => {
+    if (!state.image) return;
+    
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const result = await analyzePetPhoto(state.image);
+      setState(prev => ({ ...prev, analysis: result, loading: false }));
+    } catch (err) {
+      setState(prev => ({ 
+        ...prev, 
+        error: err instanceof Error ? err.message : '分析失败',
+        loading: false 
+      }));
     }
   };
 
-  const analyzeImage = async () => {
-    if (!image) return;
-    setLoading(true);
-    setTimeout(() => {
-      setAnalysis(`AI诊断结果：\n- 粪便/皮肤异常概率: 85%\n- 可能疾病：轻度肠胃炎\n- 紧急程度：中\n- 建议：立即补充益生菌 + 观察24小时`);
-      setLoading(false);
-    }, 1500);
+  const reset = () => {
+    setState({
+      image: null,
+      preview: null,
+      analysis: null,
+      loading: false,
+      error: null
+    });
   };
 
   return (
     <div className="p-8 bg-zinc-950 border border-red-500/30 rounded-3xl">
-      <h2 className="text-3xl font-bold text-red-400 mb-6">🚨 AI 实时诊断引擎</h2>
-      
-      <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center">
-        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="upload" />
-        <label htmlFor="upload" className="cursor-pointer text-zinc-400 hover:text-white block">
-          📸 点击上传粪便 / 皮肤 / 姿态照片
-        </label>
-        {image && <p className="mt-4 text-sm text-emerald-400">已选: {image.name}</p>}
-      </div>
+      <h2 className="text-3xl font-bold text-red-400 mb-6">
+        🚨 AI 实时诊断引擎
+      </h2>
 
-      <button 
-        onClick={analyzeImage}
-        disabled={!image || loading}
-        className="mt-6 w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-bold text-lg disabled:opacity-50 transition"
-      >
-        {loading ? 'Grok多模态引擎狂飙中...' : '🔥 启动AI诊断'}
-      </button>
+      {!state.preview ? (
+        <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-12 text-center">
+          <input 
+            type="file" 
+            accept="image/*" 
+            onChange={handleImageUpload} 
+            className="hidden" 
+            id="upload" 
+          />
+          <label 
+            htmlFor="upload" 
+            className="cursor-pointer text-zinc-400 hover:text-white block"
+          >
+            <Upload className="w-12 h-12 mx-auto mb-4" />
+            📸 点击上传粪便 / 皮肤 / 姿态照片
+          </label>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* 图片预览 */}
+          <div className="relative rounded-2xl overflow-hidden border border-zinc-700">
+            <img 
+              src={state.preview} 
+              alt="Uploaded pet" 
+              className="w-full h-64 object-cover"
+            />
+            <button
+              onClick={reset}
+              className="absolute top-4 right-4 bg-black/70 hover:bg-black px-3 py-1 rounded-lg text-sm"
+            >
+              重新上传
+            </button>
+          </div>
 
-      {analysis && (
-        <div className="mt-8 p-6 bg-black border border-emerald-500/50 rounded-2xl whitespace-pre-line font-mono text-sm">
-          {analysis}
+          {/* 分析按钮 */}
+          <button
+            onClick={analyzeImage}
+            disabled={state.loading}
+            className="w-full bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-bold text-lg disabled:opacity-50 transition flex items-center justify-center gap-2"
+          >
+            {state.loading ? (
+              <>
+                <span className="animate-pulse">🔍</span>
+                Grok 多模态引擎狂飙中...
+              </>
+            ) : (
+              <>
+                🔥 启动 AI 诊断
+              </>
+            )}
+          </button>
+
+          {/* 错误提示 */}
+          {state.error && (
+            <div className="p-4 bg-red-900/30 border border-red-500 rounded-xl text-red-300">
+              <AlertTriangle className="inline w-5 h-5 mr-2" />
+              {state.error}
+            </div>
+          )}
+
+          {/* 分析结果 */}
+          {state.analysis && (
+            <div className="p-6 bg-black border border-emerald-500/50 rounded-2xl space-y-4">
+              <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+                <CheckCircle className="w-6 h-6" />
+                诊断完成
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-zinc-900 rounded-xl">
+                  <div className="text-zinc-400 text-sm">品种</div>
+                  <div className="text-white font-bold">{state.analysis.breed}</div>
+                </div>
+                <div className="p-4 bg-zinc-900 rounded-xl">
+                  <div className="text-zinc-400 text-sm">情绪状态</div>
+                  <div className="text-white font-bold">{state.analysis.emotionalState}</div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-zinc-900 rounded-xl">
+                <div className="text-zinc-400 text-sm mb-2">建议</div>
+                <div className="text-white">{state.analysis.recommendation}</div>
+              </div>
+
+              {state.analysis.summary && (
+                <div className="p-4 bg-zinc-900 rounded-xl">
+                  <div className="text-zinc-400 text-sm mb-2">详细分析</div>
+                  <div className="text-zinc-300 text-sm whitespace-pre-line">
+                    {state.analysis.summary}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
