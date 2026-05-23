@@ -1,0 +1,22 @@
+name = "puppyforge-edge"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-05-23"
+
+# 杀手锏：Durable Objects (每个宠物一个独立实例)
+[[durable_objects.bindings]]
+name = "PUPPY_BRAIN"
+class_name = "PuppyBrainDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["PuppyBrainDO"]
+
+# 边缘向量库 (替代 Qdrant)
+[[vectorize]]
+binding = "PUPPY_MEMORY"
+index_name = "puppy-brain-vectors"
+
+# 边缘 KV (用于 JWT 算力限流)
+[[kv_namespaces]]
+binding = "COMPUTE_QUOTA"
+id = "your_kv_namespace_id"
