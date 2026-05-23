@@ -1,30 +1,25 @@
+# ========================================
+# Forge API - Core Dependencies (CPU Mode)
+# ========================================
 
-fastapi
-redis
-qdrant-client
-litellm
-uvicorn
+# 🚀 Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
 
-fastapi
-redis
-qdrant-client
-litellm
-uvicorn
+# 🗄️ Data & Cache
+redis==5.2.1
+qdrant-client==1.12.1
 
-fastapi
-redis
-qdrant-client
-litellm
-uvicorn
+# 🤖 LLM Router (CPU-compatible)
+litellm==1.55.0
 
-fastapi
-redis
-qdrant-client
-litellm
-uvicorn
+# 🔗 HTTP Client (litellm 依赖，显式声明更稳)
+httpx==0.27.2
 
-fastapi
-redis
-qdrant-client
-litellm
-uvicorn
+# 🔧 Utilities
+python-dotenv==1.0.1
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# 🩺 Health & Monitoring (optional but recommended)
+prometheus-fastapi-instrumentator==7.0.0
