@@ -13,4 +13,4 @@ COPY ./backend /app/backend
 # 非 root 用户运行 (distroless 默认 nonroot)
 USER nonroot
 ENV PYTHONPATH="/usr/local/lib/python3.11/site-packages"
-CMD ["-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["/usr/bin/python3", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
