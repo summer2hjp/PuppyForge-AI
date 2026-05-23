@@ -1,0 +1,5 @@
+supabase:
+  config:
+    schema: public
+  migrations:
+    - schema.sql
