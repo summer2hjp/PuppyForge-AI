@@ -5,6 +5,7 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    user: "${UID:-1000}:${GID:-1000}" 
     environment:
       - REDIS_URL=redis://redis:6379
       - QDRANT_URL=http://qdrant:6333
@@ -16,15 +17,15 @@ services:
       - redis
       - qdrant
       - supabase
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    #deploy:
+    # resources:
+    #    reservations:
+    #     devices:
+    #        - driver: nvidia
+    #          count: all
+    #          capabilities: [gpu]
     volumes:
-      - ./backend:/app
+      - ./backend:/app:delegated 
     command: uvicorn gateway.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:  # Next.js 15 前线视觉战场
