@@ -1,2 +1,17 @@
-# PuppyForge-AI
-AI-Powered Puppy Health Manager &amp; Growth Forge - Next-gen intelligent pet health platform
+# PuppyForge AI 🐶💥
+
+**宠物界最激进的AI健康锻造系统**
+
+把普通小狗养成**顶级健康怪物**的AI平台。
+
+## 核心使命
+不再只是记录 —— 而是**预测、干预、锻造**。
+
+## 核弹功能
+- 照片/视频/语音秒诊断（粪便、皮肤、行为）
+- 30天疾病预测雷达
+- 个性化营养+运动+疫苗黑客方案
+- 多狗家庭协同作战
+- 智能项圈实时联动（未来）
+
+**Powered by Grok xAI + 最大胆创新**
