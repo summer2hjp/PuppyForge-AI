@@ -1,6 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'PuppyForge AI - 多智能体宠物健康诊断系统',

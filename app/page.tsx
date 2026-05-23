@@ -2,11 +2,17 @@
 'use client';
 
 import { useState } from 'react';
-import HealthScoreCard from '../components/HealthScoreCard';
-import RiskRadar from '../components/RiskRadar';
-import QuickDiagnose from '../components/QuickDiagnose';
-import ActivityFeed from '../components/ActivityFeed';
-import ThemeToggle from '../components/ThemeToggle';
+import { 
+  HealthScoreCard, 
+  RiskRadar, 
+  QuickDiagnose, 
+  ActivityFeed,
+  ThemeToggle,
+  PuppyProfileCard,
+  HealthTrendChart,
+  NotificationToast,
+  useNotification
+} from '../components';
 import { VisionAnalysisResult } from '../ai-agents/types';
 
 export default function PuppyForge() {
@@ -17,15 +23,25 @@ export default function PuppyForge() {
     '30 天内无重大健康风险',
     '建议持续当前护理方案',
   ]);
+  
+  const notifications = useNotification();
 
   const handleDiagnosisComplete = (result: VisionAnalysisResult) => {
-    // 根据诊断结果更新状态
     console.log('诊断完成:', result);
-    // 这里可以添加逻辑来更新健康分数和风险等级
+    // 根据诊断结果更新状态
+    if (result.emotionalState.includes('焦虑')) {
+      setHealthScore(prev => Math.max(prev - 5, 0));
+      notifications.warning('情绪波动', `检测到${result.emotionalState}，建议关注`);
+    } else {
+      notifications.success('诊断完成', result.recommendation);
+    }
   };
 
   return (
     <main className="min-h-screen bg-black text-white">
+      {/* 通知系统 */}
+      <NotificationToast {...notifications} />
+      
       {/* Header */}
       <header className="border-b border-zinc-800">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
@@ -41,6 +57,24 @@ export default function PuppyForge() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-8 py-12">
+        {/* 小狗档案 */}
+        <div className="mb-12">
+          <PuppyProfileCard 
+            profile={{
+              id: '1',
+              name: '旺财',
+              breed: '金毛寻回犬',
+              birthDate: '2023-06-15',
+              gender: 'male',
+              weightKg: 28.5,
+            }}
+            onSave={(profile) => {
+              console.log('保存档案:', profile);
+              notifications.success('档案已保存', `${profile.name}的信息已更新`);
+            }}
+          />
+        </div>
+        
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <HealthScoreCard score={healthScore} trend="up" />
@@ -50,6 +84,11 @@ export default function PuppyForge() {
             interventionWindow="72 小时"
           />
           <QuickDiagnose onDiagnosisComplete={handleDiagnosisComplete} />
+        </div>
+        
+        {/* 健康趋势图 */}
+        <div className="mb-12">
+          <HealthTrendChart days={14} />
         </div>
 
         {/* Activity Feed */}

@@ -11,3 +11,11 @@ export { default as ActivityFeed } from './ActivityFeed';
 export { default as DiagnosisModule } from './DiagnosisModule';
 export { default as ExplosiveDashboard } from './ExplosiveDashboard';
 export { default as VisionAnalyzer } from './vision/VisionAnalyzer';
+export { default as PuppyProfileCard } from './PuppyProfile';
+export { default as HealthTrendChart } from './HealthTrendChart';
+export { 
+  default as NotificationToast, 
+  useNotification, 
+  createNotification,
+  type NotificationType 
+} from './NotificationToast';
