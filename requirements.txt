@@ -16,3 +16,9 @@ redis
 qdrant-client
 litellm
 uvicorn
+
+fastapi
+redis
+qdrant-client
+litellm
+uvicorn
