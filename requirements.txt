@@ -1,0 +1,6 @@
+
+fastapi
+redis
+qdrant-client
+litellm
+uvicorn
