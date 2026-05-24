@@ -1,75 +1,117 @@
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
 import asyncio
-from dataclasses import dataclass
-from temporalio import workflow, activity
-from temporalio.common import RetryPolicy
+from datetime import datetime
 
-@dataclass
-class ForgeInput:
-    user_id: str
-    raw_prompt: str
-    asset_type: str  # "puppy", "gear", "habitat"
+import os
+from openai import AsyncOpenAI
+from qdrant_client import QdrantClient
 
-# --- 1. 炼金活动：Prompt 优化 ---
-@activity.defn
-async def alchemy_prompt(raw_prompt: str, asset_type: str) -> dict:
-    # 调用 LLM 将 "一只赛博朋克的狗" 转为包含权重、负向提示词的 JSON
-    # return await llm_client.optimize(raw_prompt, asset_type)
-    return {"positive": "cyberpunk dog, neon, 8k", "negative": "blurry, lowres", "seeds": [42, 88, 1024]}
+class ForgeStage(BaseModel):
+    stage_name: str
+    input_data: Dict[str, Any]
+    output: Optional[Dict[str, Any]] = None
+    quality_score: float = 0.0
 
-# --- 2. 锻造活动：多模型并行生成 ---
-@activity.defn
-async def parallel_forging(prompts: dict) -> list[str]:
-    # 并发调用 Flux/SD3 生成候选图片/3D模型
-    tasks = [generate_asset(prompts["positive"], prompts["negative"], seed) for seed in prompts["seeds"]]
-    return await asyncio.gather(*tasks)
+class ForgePipeline:
+    def __init__(self):
+        self.llm = AsyncOpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        self.qdrant = QdrantClient(host='localhost', port=6333)
+        self.collection_name = 'forged_assets'
 
-async def generate_asset(pos, neg, seed) -> str:
-    # Mock: 调用生图 API
-    return f"s3://forge-temp/candidate_{seed}.webp"
+    async def run_forge(self, puppy_id: str, base_prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        '''四阶段炼金流水线：Alchemy → Parallel Forging → Adversarial Validation → Crystallize'''
+        stages = []
 
-# --- 3. 质检活动：VLM 对抗校验 ---
-@activity.defn
-async def adversarial_validation(candidates: list[str], original_prompt: str) -> str:
-    # 引入 VLM (如 LLaVA/Qwen-VL) 对候选资产进行严苛打分
-    # 选出最符合 prompt 且没有结构崩坏 (如 5 条腿) 的资产
-    # winner = await vlm_client.judge(candidates, original_prompt)
-    return candidates[0] # Mock: 返回胜者
+        # 1. Prompt 炼金 (Alchemy Prompt)
+        alchemy_result = await self._alchemy_prompt(base_prompt, context)
+        stages.append(ForgeStage(stage_name='alchemy', input_data={'prompt': base_prompt}, output=alchemy_result))
 
-# --- 4. 结晶活动：资产后处理与入库 ---
-@activity.defn
-async def crystallize_asset(winner_url: str, user_id: str) -> str:
-    # 1. 图像转 3D (如 Tripo3D / LRM) 
-    # 2. 生成 LOD 和压缩纹理
-    # 3. 写入 PostgreSQL 资产表 & 向量库
-    return f"s3://puppyforge-assets/{user_id}/final_asset.glb"
+        # 2. 并行锻造 (Parallel Forging)
+        forged = await self._parallel_forging(alchemy_result['refined_prompt'], context)
+        stages.append(ForgeStage(stage_name='forging', input_data=alchemy_result, output=forged))
 
-# --- 核心状态机编排 ---
-@workflow.defn
-class PuppyForgePipeline:
-    @workflow.run
-    async def run(self, input: ForgeInput) -> str:
-        # 阶段 1: 炼金
-        prompts = await workflow.execute_activity(
-            alchemy_prompt, args=[input.raw_prompt, input.asset_type],
-            start_to_close_timeout=10, retry_policy=RetryPolicy(maximum_attempts=3)
+        # 3. 对抗质检 (Adversarial Validation)
+        validated = await self._adversarial_validation(forged)
+        stages.append(ForgeStage(stage_name='validation', input_data=forged, output=validated))
+
+        # 4. 资产结晶 (Crystallize Asset)
+        asset = await self._crystallize_asset(puppy_id, validated)
+        stages.append(ForgeStage(stage_name='crystallize', input_data=validated, output=asset))
+
+        return {
+            'puppy_id': puppy_id,
+            'asset': asset,
+            'stages': [s.model_dump() for s in stages],
+            'final_quality': asset.get('quality_score', 0.0)
+        }
+
+    async def _alchemy_prompt(self, base_prompt: str, context: Dict) -> Dict:
+        '''Prompt 进化炼金'''
+        prompt = f"""作为高级提示炼金师，优化以下基础提示用于宠物内容生成。
+基础提示: {base_prompt}
+上下文: {context}
+
+输出优化后的提示和关键变体。"""
+        response = await self.llm.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        
-        # 阶段 2: 并行锻造
-        candidates = await workflow.execute_activity(
-            parallel_forging, args=[prompts],
-            start_to_close_timeout=120, heartbeat_timeout=30
+        return {'refined_prompt': response.choices[0].message.content, 'variants': []}
+
+    async def _parallel_forging(self, refined_prompt: str, context: Dict) -> Dict:
+        '''并行多模型锻造 (模拟)'''
+        # 实际可扩展到多个 LLM 调用
+        result = {
+            'content': f'锻造内容: {refined_prompt[:200]}...',
+            'variants': ['variant1', 'variant2'],
+            'creativity_score': 0.92
+        }
+        return result
+
+    async def _adversarial_validation(self, forged: Dict) -> Dict:
+        '''对抗质检'''
+        prompt = f"""作为对抗审查 Agent，严格评估以下内容质量、宠物相关性和安全性。
+内容: {forged}
+
+输出 JSON: score, issues, approved"""
+        response = await self.llm.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        
-        # 阶段 3: 对抗校验
-        winner = await workflow.execute_activity(
-            adversarial_validation, args=[candidates, input.raw_prompt],
-            start_to_close_timeout=30
+        data = eval(response.choices[0].message.content)  # 生产环境用 json.loads
+        return {**forged, **data}
+
+    async def _crystallize_asset(self, puppy_id: str, validated: Dict) -> Dict:
+        '''资产结晶 + 向量存储'''
+        embedding = await self._generate_embedding(validated['content'])
+        point_id = int(datetime.utcnow().timestamp() * 1000000)
+        self.qdrant.upsert(
+            collection_name=self.collection_name,
+            points=[{
+                'id': point_id,
+                'vector': embedding,
+                'payload': {
+                    'puppy_id': puppy_id,
+                    'asset_type': 'forged_content',
+                    'content': validated['content'],
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'quality': validated.get('score', 0.0)
+                }
+            }]
         )
-        
-        # 阶段 4: 结晶
-        final_asset_url = await workflow.execute_activity(
-            crystallize_asset, args=[winner, input.user_id],
-            start_to_close_timeout=300
+        return {
+            'asset_id': str(point_id),
+            'quality_score': validated.get('score', 0.85),
+            'url': f'/assets/{puppy_id}/{point_id}',
+            'status': 'crystallized'
+        }
+
+    async def _generate_embedding(self, text: str) -> List[float]:
+        response = await self.llm.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
         )
-        
-        return final_asset_url
+        return response.data[0].embedding
