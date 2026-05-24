@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 class PetTraits(BaseModel):
     loyalty: float = 65.0
@@ -18,6 +18,7 @@ class PetMemory(BaseModel):
     content: str
     impact: float
     mood_delta: float
+    embedding: Optional[List[float]] = None
 
 
 class PuppySoul(BaseModel):
@@ -44,10 +45,3 @@ class EvolutionResult(BaseModel):
     level_up: bool
     new_stage: str
     trait_summary: Dict[str, float]
-
-
-class VisionDiagnosis(BaseModel):
-    mood: int
-    health: int
-    suggestions: List[str]
-    trait_impact: Dict[str, float]
