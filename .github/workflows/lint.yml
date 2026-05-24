@@ -1,0 +1,30 @@
+name: Lint Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend Lint
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          cd backend
+          pip install black isort
+          black --check .
+          isort --check-only .
+
+      - name: Frontend Lint
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: |
+          cd frontend
+          npm ci
+          npm run lint
