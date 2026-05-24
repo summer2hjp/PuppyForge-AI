@@ -11,13 +11,16 @@
   },
   "dependencies": {
     "next": "15.0.0",
-    "react": "19.0.0-rc",
-    "react-dom": "19.0.0-rc",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "zustand": "^4.5.5",
     "zod": "^3.23.8",
     "tailwindcss": "^3.4.1",
     "postcss": "^8.4.41",
     "autoprefixer": "^10.4.20",
+    "next-themes": "^0.4.0",
+    "lucide-react": "^0.500.0",
+    "@supabase/supabase-js": "^2.49.0",
     "@types/node": "^22.5.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0"
