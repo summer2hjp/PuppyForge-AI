@@ -75,9 +75,9 @@ const withSerwist = require('@serwist/next').default({
   disable: process.env.NODE_ENV === 'development', // 开发环境关闭避免冲突
   register: true,
   scope: '/',
-  skipWaiting: true,
-  clientsClaim: true,
-  importScripts: [], // 可后续添加更多 worker
+  //skipWaiting: true,
+  //clientsClaim: true,
+  //importScripts: [], // 可后续添加更多 worker
 });
 
 module.exports = withSerwist(nextConfig);

@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -15,17 +19,28 @@
     "target": "ES2018",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["./components/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/store/*": ["./store/*"],
-      "@/lib/*": ["./lib/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/hooks/*": [
+        "./hooks/*"
+      ],
+      "@/store/*": [
+        "./store/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ]
     },
     "forceConsistentCasingInFileNames": true,
-    
     // Three.js & React Three Fiber 优化
-    "types": ["three", "node"],
-    
+    "types": [
+      "three",
+      "node"
+    ],
     // 严格模式增强
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -34,16 +49,21 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
-    
     // 性能优化
     "moduleDetection": "force",
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.d.ts"
+    ".next/types/**/*.d.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
