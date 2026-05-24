@@ -50,4 +50,25 @@ class PuppySoul(BaseModel):
                 setattr(self.traits, trait, new_val)
         
         self.experience += int(sum(abs(d) for d in changes.values()))
-        self.soul_fuel = max(10.0, self.soul_fuel - settings.SOUL
+        self.soul_fuel = max(10.0, self.soul_fuel - settings.SOUL_FUEL_DECAY_RATE * 10)
+
+
+class SoulEvent(BaseModel):
+    event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    soul_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    event_type: str
+    payload: Dict[str, Any]
+
+
+class InteractionResult(BaseModel):
+    soul: PuppySoul
+    response: str
+    trait_changes: Dict[str, float]
+    agent_insights: Dict[str, Any] = Field(default_factory=dict)
+    memory_injected: bool = True
+
+
+class ErrorResponse(BaseModel):
+    message: str
+    detail: Optional[str] = None
