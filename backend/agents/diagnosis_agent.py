@@ -1,5 +1,6 @@
 from .base_agent import BaseAgent
-from typing import Dict, Any
+from typing import Dict
+from config import settings
 
 class DiagnosisAgent(BaseAgent):
     def __init__(self):
@@ -9,13 +10,15 @@ class DiagnosisAgent(BaseAgent):
         visual = input_data.get("visual_features", {})
         context = input_data.get("context", "")
 
-        prompt = f"作为宠物健康诊断Agent，基于以下信息给出专业诊断：\n视觉特征: {visual}\n行为上下文: {context}"
+        prompt = f"作为专业宠物健康诊断Agent，基于以下信息给出详细诊断：\n视觉特征: {visual}\n行为上下文: {context}"
 
         diagnosis_raw = await self._call_llm(prompt, response_format=None)
+
+        risk_level = 7 if any(word in diagnosis_raw.lower() for word in ["异常", "危险", "问题"]) else 3
 
         return {
             "agent": self.name,
             "diagnosis": diagnosis_raw,
-            "risk_level": 3 if "正常" in diagnosis_raw else 7,
+            "risk_level": risk_level,
             "visual_insights": visual
         }
