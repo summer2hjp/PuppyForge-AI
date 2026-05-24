@@ -3,38 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  --font-space-grotesk: 'Space Grotesk', sans-serif;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  font-feature-settings: "ss01";
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
-@keyframes slide-in-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+.glass {
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(20px);
 }
