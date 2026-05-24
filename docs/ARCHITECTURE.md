@@ -1,5 +1,7 @@
 # PuppyForge AI Architecture
 
+> 详细设计请参考：[`docs/DETAILED_DESIGN.md`](./DETAILED_DESIGN.md)
+
 ## 整体架构
 - Frontend: Next.js 15 + Tailwind + shadcn/ui
 - Backend: FastAPI (Python) + Grok API
