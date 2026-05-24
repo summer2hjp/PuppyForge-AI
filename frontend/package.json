@@ -1,55 +1,48 @@
 {
   "name": "puppyforge-ai",
-  "version": "1.4.0",
+  "version": "4.2.0",
   "private": true,
-  "description": "PuppyForge AI - 数字疯狗灵魂工厂 | 叛逆进化 · 记忆漂移 · 永不掉线",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy:vercel": "vercel --prod",
-    "deploy:cf": "wrangler pages deploy .next",
-    "clean": "rm -rf .next node_modules .vercel"
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "preview": "next build && next start"
   },
   "dependencies": {
-    "next": "14.2.15",
+    "@react-three/drei": "^9.108.0",
+    "@react-three/fiber": "^8.17.6",
+    "framer-motion": "^11.3.0",
+    "lucide-react": "^0.441.0",
+    "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    
-    "@serwist/next": "^9.0.0",
-    "@serwist/sw": "^9.0.0",
-    
-    "tailwindcss": "^3.4.17",
-    "postcss": "^8.4.47",
-    "autoprefixer": "^10.4.20",
-    
-    "framer-motion": "^11.11.9",
-    "lucide-react": "^0.441.0",
+    "three": "^0.168.0",
+    "zustand": "^4.5.5",
+    "tailwind-merge": "^2.5.2",
+    "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4"
+    "sonner": "^1.5.0"
   },
   "devDependencies": {
-    "@types/node": "^20.17.6",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "typescript": "^5.6.3",
-    "@tailwindcss/typography": "^0.5.15",
-    "vercel": "^37.0.0",
-    "@cloudflare/wrangler": "^3.78.0"
+    "@types/node": "^22.5.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.168.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.9.0",
+    "eslint-config-next": "14.2.5",
+    "postcss": "^8.4.41",
+    "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^5.5.4",
+    "@typescript-eslint/eslint-plugin": "^8.4.0",
+    "@typescript-eslint/parser": "^8.4.0"
   },
   "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "ai-pet",
-    "digital-dog",
-    "pwa",
-    "nextjs",
-    "soul-evolution",
-    "memory-drift",
-    "cyberpunk-pet"
-  ],
-  "author": "summer2hjp",
-  "license": "MIT"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
 }
