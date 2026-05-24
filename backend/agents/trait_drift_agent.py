@@ -1,5 +1,6 @@
 from .base_agent import BaseAgent
-from models import PuppySoul, PetTraits
+from config import settings
+from models import PuppySoul
 
 class TraitDriftAgent(BaseAgent):
     def __init__(self):
@@ -14,15 +15,12 @@ class TraitDriftAgent(BaseAgent):
         当前幼犬灵魂状态：
         名字: {soul.name} | 等级: {soul.level} | 叛逆值: {soul.rebellion_score}
         当前特质: {current_traits}
-        
         用户行为: {user_input}
-        
-        请输出性格漂移变化（JSON），允许正负漂移，体现"活的灵魂"特性。
-        重点考虑叛逆、好奇、混乱三个维度。
+
+        请输出 JSON 格式的性格漂移变化（允许正负），重点考虑 chaos、curiosity、rebellion。
         """
 
         result = await self._call_llm(prompt)
-        # 解析并应用漂移
         drift_changes = eval(result) if isinstance(result, str) else result
 
         soul.apply_drift(drift_changes)
