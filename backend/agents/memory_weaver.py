@@ -1,5 +1,6 @@
 from .base_agent import BaseAgent
 from models import PetMemory
+from config import settings
 from datetime import datetime
 import uuid
 
@@ -11,7 +12,7 @@ class MemoryWeaver(BaseAgent):
     async def run(self, soul: PuppySoul, input_data: Dict[str, Any]) -> Dict:
         user_input = input_data.get("user_input", "")
 
-        prompt = f"基于以下交互，为幼犬 {soul.name} 编织一段深刻记忆：{user_input}"
+        prompt = f"基于以下交互，为幼犬 {soul.name} 编织一段深刻且富有情感的记忆：{user_input}"
 
         memory_content = await self._call_llm(prompt, response_format=None)
 
@@ -26,6 +27,8 @@ class MemoryWeaver(BaseAgent):
         )
 
         soul.memories.append(new_memory)
+        if len(soul.memories) > settings.MAX_MEMORIES_PER_SOUL:
+            soul.memories.pop(0)
 
         return {
             "agent": self.name,
