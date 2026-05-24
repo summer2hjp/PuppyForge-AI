@@ -1,32 +1,34 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 import uuid
 
+class UserRole(str):
+    USER = "user"
+    ADMIN = "admin"
+    SUPERADMIN = "superadmin"
+
 class User(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     email: EmailStr = Field(unique=True, index=True)
-    hashed_password: str
+    hashed_password: Optional[str] = None
     is_active: bool = True
-    is_superuser: bool = False
+    role: UserRole = Field(default=UserRole.USER)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # 一用户多灵魂（宠物）
+    # OAuth 信息
+    google_id: Optional[str] = Field(default=None, unique=True)
+    github_id: Optional[str] = Field(default=None, unique=True)
+    
     souls: list["PuppySoul"] = Relationship(back_populates="owner")
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    password: Optional[str] = None
 
 class UserRead(BaseModel):
     id: str
     email: EmailStr
+    role: UserRole
     is_active: bool
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-class TokenData(BaseModel):
-    user_id: Optional[str] = None
