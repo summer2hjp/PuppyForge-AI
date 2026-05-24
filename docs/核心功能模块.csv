@@ -1,2 +1,4 @@
 ﻿前端核心组件,负责的展示信息
-HealthScoreCard.tsx,1. ：健康分数展示，支持趋势指示、人格 Trait Drift 可视化、WebSocket 实时同步。<br>2. 财务账本：token_ledger (记录每次 VLM 推理的 Token 成本与财务扣减)。<br>3. 事件备份：Event Sourcing 的冷数据持久化。
+HealthScoreCard.tsx,健康分数展示，支持趋势指示、人格 Trait Drift 可视化、WebSocket 实时同步。<br>
+RiskRadar.tsx,风险等级雷达，支持四级预警。<br>
+PuppyProfile.tsx,宠物档案卡片，显示记忆深度、演化阶段、人格画像。
