@@ -1,77 +1,112 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 
-interface PersonaState {
+export interface PersonaState {
   trust: number;
   neuroticism: number;
   energy: number;
   attachment: number;
 }
 
-interface PuppyStore {
-  // 核心状态
+export interface PuppyForgeState {
+  // 基础信息
   puppyId: string;
+  puppyName: string;
+
+  // 核心指标
   healthScore: number;
   persona: PersonaState;
-  rebelSuggestions: any[];
+
+  // 诊断与记忆
   lastDiagnosis: any | null;
+  memoriesCount: number;
+
+  // Rebel 系统
+  rebelSuggestions: Array<{
+    suggestion: string;
+    risk_level: number;
+    rebel_factor: number;
+    reasoning: string;
+    timestamp: string;
+  }>;
   isRebelling: boolean;
 
   // Actions
   updateHealthScore: (score: number) => void;
-  updatePersona: (newPersona: Partial<PersonaState>) => void;
-  addRebelSuggestion: (suggestion: any) => void;
+  updatePersona: (partial: Partial<PersonaState>) => void;
   setLastDiagnosis: (diagnosis: any) => void;
-  setRebelling: (isRebelling: boolean) => void;
-  resetStore: () => void;
+  addRebelSuggestion: (suggestion: any) => void;
+  incrementMemories: () => void;
+  setRebelling: (value: boolean) => void;
+  resetAll: () => void;
 }
 
-export const usePuppyStore = create<PuppyStore>()(
+export const usePuppyStore = create<PuppyForgeState>()(
   devtools(
-    (set) => ({
-      puppyId: "p001",
-      healthScore: 87,
-      persona: {
-        trust: 0.82,
-        neuroticism: 0.41,
-        energy: 0.88,
-        attachment: 0.93,
-      },
-      rebelSuggestions: [],
-      lastDiagnosis: null,
-      isRebelling: false,
+    persist(
+      (set, get) => ({
+        puppyId: "p001",
+        puppyName: "小黄",
+        healthScore: 87,
+        persona: {
+          trust: 0.82,
+          neuroticism: 0.41,
+          energy: 0.88,
+          attachment: 0.93,
+        },
+        lastDiagnosis: null,
+        memoriesCount: 87,
+        rebelSuggestions: [],
+        isRebelling: false,
 
-      updateHealthScore: (score) =>
-        set((state) => ({
-          healthScore: Math.max(20, Math.min(100, score)),
-        })),
+        // ==================== Actions ====================
+        updateHealthScore: (score: number) =>
+          set((state) => ({
+            healthScore: Math.max(20, Math.min(100, Math.round(score))),
+          })),
 
-      updatePersona: (newPersona) =>
-        set((state) => ({
-          persona: { ...state.persona, ...newPersona },
-        })),
+        updatePersona: (partial: Partial<PersonaState>) =>
+          set((state) => ({
+            persona: { ...state.persona, ...partial },
+          })),
 
-      addRebelSuggestion: (suggestion) =>
-        set((state) => ({
-          rebelSuggestions: [suggestion, ...state.rebelSuggestions].slice(0, 5),
-          isRebelling: true,
-        })),
+        setLastDiagnosis: (diagnosis: any) =>
+          set({ lastDiagnosis: diagnosis }),
 
-      setLastDiagnosis: (diagnosis) =>
-        set({ lastDiagnosis: diagnosis }),
+        addRebelSuggestion: (suggestion: any) =>
+          set((state) => ({
+            rebelSuggestions: [
+              { ...suggestion, timestamp: new Date().toISOString() },
+              ...state.rebelSuggestions,
+            ].slice(0, 6),
+            isRebelling: true,
+          })),
 
-      setRebelling: (isRebelling) =>
-        set({ isRebelling }),
+        incrementMemories: () =>
+          set((state) => ({ memoriesCount: state.memoriesCount + 1 })),
 
-      resetStore: () =>
-        set({
-          healthScore: 87,
-          persona: { trust: 0.8, neuroticism: 0.4, energy: 0.85, attachment: 0.9 },
-          rebelSuggestions: [],
-          lastDiagnosis: null,
-          isRebelling: false,
+        setRebelling: (value: boolean) => set({ isRebelling: value }),
+
+        resetAll: () =>
+          set({
+            healthScore: 87,
+            persona: { trust: 0.82, neuroticism: 0.41, energy: 0.88, attachment: 0.93 },
+            lastDiagnosis: null,
+            rebelSuggestions: [],
+            isRebelling: false,
+            memoriesCount: 87,
+          }),
+      }),
+      {
+        name: 'puppyforge-storage',
+        partialize: (state) => ({
+          puppyId: state.puppyId,
+          puppyName: state.puppyName,
+          persona: state.persona,
+          memoriesCount: state.memoriesCount,
         }),
-    }),
+      }
+    ),
     { name: 'PuppyForge-Store' }
   )
 );
