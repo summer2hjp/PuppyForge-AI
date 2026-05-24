@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface PuppySoul {
   id: string;
@@ -8,6 +8,7 @@ interface PuppySoul {
   rebellion_score: number;
   soul_fuel: number;
   memories: any[];
+  evolution_stage: string;
 }
 
 export function usePuppySoul(soulId: string) {
@@ -16,12 +17,15 @@ export function usePuppySoul(soulId: string) {
   const wsRef = useRef<WebSocket | null>(null);
 
   const connect = useCallback(() => {
+    const token = localStorage.getItem('puppy_token');
+    const protocol = token ? `Bearer ${token}` : '';
+
     const ws = new WebSocket(`ws://localhost:8000/ws/soul/${soulId}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
       setIsConnected(true);
-      console.log(`🐾 Soul ${soulId} connected`);
+      console.log(`🐾 Soul ${soulId} WebSocket 已连接`);
     };
 
     ws.onmessage = (event) => {
@@ -31,8 +35,12 @@ export function usePuppySoul(soulId: string) {
       }
     };
 
-    ws.onclose = () => setIsConnected(false);
-    ws.onerror = (err) => console.error("SoulRadar WS Error:", err);
+    ws.onclose = () => {
+      setIsConnected(false);
+      console.log(`❌ Soul ${soulId} 连接断开`);
+    };
+
+    ws.onerror = (error) => console.error("WebSocket Error:", error);
   }, [soulId]);
 
   const disconnect = useCallback(() => {
@@ -48,5 +56,16 @@ export function usePuppySoul(soulId: string) {
     }
   }, []);
 
-  return { soul, isConnected, connect, disconnect, sendInteraction };
+  useEffect(() => {
+    connect();
+    return () => disconnect();
+  }, [connect, disconnect]);
+
+  return {
+    soul,
+    isConnected,
+    sendInteraction,
+    connect,
+    disconnect
+  };
 }
