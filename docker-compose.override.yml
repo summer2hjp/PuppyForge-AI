@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build:
+      target: dev     # ✅ 覆盖为开发阶段
+    # 开发环境不需要在构建时注入变量，Next.js dev server 会在运行时读取 .env.local
+    volumes:
+      - ./frontend:/app          # ✅ 挂载源码支持热重载
+      - /app/node_modules        # ✅ 匿名卷：防止宿主机的 node_modules 覆盖容器内的 (跨平台防坑必做)
+    command: npm run dev         # ✅ 确保启动开发服务器
+    ports:
+      - "3000:3000"
