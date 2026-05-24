@@ -3,14 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --font-space-grotesk: 'Space Grotesk', sans-serif;
+  --font-space-grotesk: 'Space Grotesk', system-ui, sans-serif;
 }
 
 body {
-  font-feature-settings: "ss01";
+  font-family: var(--font-inter);
+  font-feature-settings: "ss01", "ss02";
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-space-grotesk);
 }
 
 .glass {
   background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* 神经形态风格增强 */
+.neuro-glow {
+  box-shadow: 0 0 35px -5px rgb(139 92 246 / 0.3);
+}
+
+.rebel-glow {
+  box-shadow: 0 0 35px -5px rgb(248 113 113 / 0.4);
+}
+
+.trait-bar {
+  transition: width 1200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
