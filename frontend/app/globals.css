@@ -2,34 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ====================== 全局疯狗基础 ====================== */
 :root {
-  --font-space-grotesk: 'Space Grotesk', system-ui, sans-serif;
+  --primary: #ff2d55;
+  --primary-dark: #e02244;
+  --accent: #00f5ff;
+  --bg: #0a0a0a;
+  --card: #111111;
+  --text: #ffffff;
+  --text-muted: #aaaaaa;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: var(--font-inter);
-  font-feature-settings: "ss01", "ss02";
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-space-grotesk);
+/* ====================== 激进移动端适配 ====================== */
+* {
+  -webkit-tap-highlight-color: transparent; /* 去除点击高亮 */
+  touch-action: manipulation; /* 提升触摸响应 */
 }
 
-.glass {
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+@media (max-width: 768px) {
+  body {
+    font-size: 16px; /* 防止 iOS 自动缩放 */
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
-/* 神经形态风格增强 */
-.neuro-glow {
-  box-shadow: 0 0 35px -5px rgb(139 92 246 / 0.3);
+/* 全屏沉浸体验 */
+.mobile-full {
+  min-height: 100dvh; /* 动态视口高度，解决移动端地址栏问题 */
 }
 
-.rebel-glow {
-  box-shadow: 0 0 35px -5px rgb(248 113 113 / 0.4);
+/* 宠物交互区域优化 */
+.pet-container {
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.trait-bar {
-  transition: width 1200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+/* 卡片与按钮移动端激进优化 */
+.card {
+  background-color: var(--card);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px -15px rgba(255, 45, 85, 0.3);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.btn-primary:active {
+  transform: scale(0.92) translateY(1px);
+  box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4);
+}
+
+/* 滚动条美化（移动端也有效） */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 45, 85, 0.5);
+  border-radius: 20px;
+}
+
+/* 状态栏与安全区适配 */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* PWA 离线/低电量提示样式 */
+.offline-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ff2d55;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(255, 45, 85, 0.3);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 100px); opacity: 0; }
+  to { transform: translateX(-50%); opacity: 1; }
+}
+
+/* 宠物灵魂呼吸动画 */
+.soul-breath {
+  animation: soulBreath 4s ease-in-out infinite;
+}
+
+@keyframes soulBreath {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+/* 暗黑模式增强 */
+.dark {
+  color-scheme: dark;
+}
+
+/* 移动端手势友好区域 */
+.interact-zone {
+  min-height: 420px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: radial-gradient(circle at 50% 30%, rgba(0, 245, 255, 0.08), transparent 70%);
 }
