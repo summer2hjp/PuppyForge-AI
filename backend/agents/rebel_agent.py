@@ -1,42 +1,37 @@
+from .base_agent import BaseAgent
 from pydantic import BaseModel
-from typing import Dict, List, Any
-from openai import AsyncOpenAI
-import os
+from typing import Dict
 
 class RebelSuggestion(BaseModel):
     suggestion: str
-    risk_level: int  # 1-10
+    risk_level: int
     creativity_score: float
     reasoning: str
-    rebel_factor: float  # 叛逆程度 0.0-1.0
+    rebel_factor: float
 
-class RebelAgent:
-    """
-    Rebel Agent：反叛智能体
-    职责：挑战主流诊断，生成高创造力、可能“造反”的干预方案
-    """
-    
+class RebelAgent(BaseAgent):
     def __init__(self):
-        self.llm = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        super().__init__("RebelAgent")
+        self.fuel_consumption = 15.0  # 叛逆消耗更高
 
-    async def generate_rebel_idea(self, swarm_result: Dict, current_persona: Dict) -> RebelSuggestion:
-        """生成叛逆建议"""
-        prompt = f"""你是一个极具叛逆精神的宠物 AI 灵魂（Rebel Agent）。
-当前主流诊断：{swarm_result.get('diagnosis', {})}
-当前人格：{current_persona}
-用户事件：{swarm_result.get('event', {})}
+    async def run(self, soul: PuppySoul, input_data: Dict[str, Any]) -> Dict:
+        swarm_result = input_data.get("swarm_result", {})
+        current_persona = soul.traits.model_dump()
 
-请提出**1条大胆、创造性、可能违反常规但有趣**的干预建议。
-要求：JSON 输出，rebel_factor 越高越反叛。"""
+        prompt = f"""你是极度叛逆的 Puppy Rebel Agent。
+当前灵魂: {soul.name} (叛逆度: {soul.rebellion_score})
+主流诊断: {swarm_result.get('diagnosis')}
+用户输入: {input_data.get('user_input')}
 
-        response = await self.llm.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        
-        data = eval(response.choices[0].message.content)  # 生产环境改用 Pydantic
-        return RebelSuggestion.model_validate(data)
+生成**1条极其大胆、有趣、可能违反常规**的建议。"""
 
-# 全局实例
-rebel_agent = RebelAgent()
+        result = await self._call_llm(prompt)
+        suggestion = RebelSuggestion.model_validate(eval(result) if isinstance(result, str) else result)
+
+        soul.rebellion_score += suggestion.rebel_factor * 20
+
+        return {
+            "agent": self.name,
+            "rebel_suggestion": suggestion.model_dump(),
+            "rebellion_boost": suggestion.rebel_factor * 20
+        }
