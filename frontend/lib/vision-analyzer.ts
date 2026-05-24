@@ -5,7 +5,7 @@ export const VisionAnalysisSchema = z.object({
   puppy_id: z.string().min(1),
   image_base64: z.string().optional(),
   image_url: z.string().url().optional(),
-  description: z.string().min(5, "描述至少5个字符"),
+  description: z.string().min(5, "描述至少 5 个字符"),
   timestamp: z.string().default(() => new Date().toISOString()),
 });
 
@@ -67,3 +67,17 @@ class VisionAnalyzer {
 
 export const visionAnalyzer = new VisionAnalyzer();
 export default visionAnalyzer;
+
+/**
+ * 便捷函数：分析宠物照片
+ * @param imageFile - 图片文件
+ * @param description - 描述文本（可选）
+ * @param puppyId - 宠物 ID（可选，默认 'unknown'）
+ */
+export async function analyzePetPhoto(
+  imageFile: File | null,
+  description: string = '视觉健康检查',
+  puppyId: string = 'unknown'
+): Promise<VisionAnalysis & { diagnosis: any; healthScore: number }> {
+  return visionAnalyzer.analyze(imageFile, description, puppyId);
+}
