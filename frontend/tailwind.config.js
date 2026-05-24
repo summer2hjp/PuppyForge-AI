@@ -1,21 +1,50 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
+import type { Config } from "tailwindcss";
+
+const config: Config = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-space-grotesk)', 'system-ui', 'sans-serif'],
+      },
       colors: {
-        'brand-red': '#ef4444',
-        'brand-purple': '#a855f7',
-        'brand-cyan': '#06b6d4',
+        neuro: {
+          primary: '#8b5cf6',
+          accent: '#c026d3',
+          dark: '#09090b',
+        },
+        rebel: {
+          primary: '#ef4444',
+          accent: '#f87171',
+        }
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'neuro-pulse': 'neuroPulse 4s ease-in-out infinite',
+        'rebel-flicker': 'rebelFlicker 0.8s ease-in-out infinite',
       },
+      keyframes: {
+        neuroPulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        rebelFlicker: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
+        }
+      },
+      boxShadow: {
+        'neuro': '0 25px 50px -12px rgb(139 92 246 / 0.25)',
+        'rebel': '0 25px 50px -12px rgb(239 68 68 / 0.3)',
+      }
     },
   },
   plugins: [],
-}
+};
+
+export default config;
