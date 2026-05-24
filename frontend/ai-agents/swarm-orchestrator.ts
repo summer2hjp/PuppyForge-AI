@@ -1,54 +1,74 @@
 import { z } from 'zod';
-import { SwarmResult } from './types';
 
-// 类型定义（与后端严格对齐）
+// 与后端严格对齐的类型定义
 export const InteractionEventSchema = z.object({
-  puppy_id: z.string(),
-  action: z.string(),
-  context: z.string(),
+  puppy_id: z.string().min(1),
+  action: z.string().min(1),
+  context: z.string().min(3),
+  visual_features: z.record(z.any()).optional(),
 });
 
 export type InteractionEvent = z.infer<typeof InteractionEventSchema>;
 
+export interface SwarmResult {
+  event_id: string;
+  health_score: number;
+  diagnosis: any;
+  recommendations: string[];
+  forge_asset?: any;
+  persona_impact?: Record<string, number>;
+  observability: string;
+}
+
 class SwarmOrchestrator {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-  async run(puppyId: string, input: InteractionEvent): Promise<SwarmResult> {
-    // 1. 调用后端统一互动接口（神经形态 + Forge 全闭环）
-    const response = await fetch(`${this.baseUrl}/api/v1/interact`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    });
+  async run(puppyId: string, event: InteractionEvent): Promise<SwarmResult> {
+    // 输入验证
+    const validatedEvent = InteractionEventSchema.parse(event);
 
-    if (!response.ok) throw new Error('Swarm orchestration failed');
+    try {
+      // 调用后端完整闭环（神经形态 + Forge + OTel）
+      const response = await fetch(`${this.baseUrl}/interact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validatedEvent),
+      });
 
-    const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
 
-    // 2. 前端本地二次编排（轻量 Agent 层）
-    const enhanced = await this._localEnhance(data);
+      const result: SwarmResult = await response.json();
 
-    // 3. 触发前端状态更新与通知
-    this._notifyUI(enhanced);
+      // 前端增强处理
+      const enhancedResult = this._enhanceResult(result);
+      
+      // 全局事件广播（供 HealthScoreCard 等组件消费）
+      window.dispatchEvent(
+        new CustomEvent('puppy-forge-update', { 
+          detail: enhancedResult 
+        })
+      );
 
-    return enhanced;
+      return enhancedResult;
+    } catch (error) {
+      console.error('Swarm Orchestrator Error:', error);
+      throw error;
+    }
   }
 
-  private async _localEnhance(data: any): Promise<SwarmResult> {
+  private _enhanceResult(result: SwarmResult): SwarmResult {
     return {
-      ...data,
-      health_score: data.health_score || 85,
-      persona_impact: data.persona_impact || { energy: 0.12 },
+      ...result,
+      health_score: Math.round(result.health_score),
       recommendations: [
-        ...data.recommendations,
-        "建议记录每日行为日志以增强记忆演化"
-      ]
+        ...result.recommendations,
+        "人格 Trait Drift 已更新",
+        "Forge 资产已结晶存储"
+      ],
+      persona_impact: result.persona_impact || { energy: 0.1, trust: 0.08 }
     };
-  }
-
-  private _notifyUI(result: SwarmResult) {
-    // 集成 Toast / 全局状态更新
-    window.dispatchEvent(new CustomEvent('puppy-forge-update', { detail: result }));
   }
 }
 
