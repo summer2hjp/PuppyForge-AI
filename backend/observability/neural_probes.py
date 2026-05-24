@@ -1,94 +1,78 @@
-import time
-from functools import wraps
 from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, ConsoleMetricExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+import asyncio
+import time
+from functools import wraps
+from typing import Callable, Any, Dict
 
-# 初始化 OTel 探针 (生产环境指向 Jaeger/Tempo 和 Prometheus/Mimir)
+# === OTel 全局初始化（大胆注入神经探针） ===
 trace.set_tracer_provider(TracerProvider())
-tracer = trace.get_tracer("puppyforge.soul")
+tracer = trace.get_tracer(__name__)
 
-# 配置指标收集器
-metric_reader = PeriodicExportingMetricReader(ConsoleMetricExporter(), export_interval_millis=5000)
-metrics.set_meter_provider(MeterProvider(metric_readers=[metric_reader]))
-meter = metrics.get_meter("puppyforge.cost")
+metric_reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+meter_provider = MeterProvider(metric_readers=[metric_reader])
+metrics.set_meter_provider(meter_provider)
+meter = metrics.get_meter(__name__)
 
-# 定义核心业务指标
-llm_token_counter = meter.create_counter("puppy.llm.tokens", unit="token", description="LLM Token consumption")
-llm_cost_histogram = meter.create_histogram("puppy.llm.cost_usd", unit="USD", description="Estimated LLM cost")
-wasm_fuel_gauge = meter.create_histogram("puppy.wasm.fuel_consumed", unit="fuel", description="WASM execution fuel")
+# 核心神经指标
+llm_tokens_counter = meter.create_counter("llm_tokens_total", "LLM 调用 Token 总量")
+forge_quality_hist = meter.create_histogram("forge_quality_score", "Forge 资产质量分布", unit="score")
+persona_drift_latency_hist = meter.create_histogram("persona_drift_latency_ms", "人格漂移耗时", unit="ms")
+interaction_throughput = meter.create_counter("interactions_total", "总互动次数")
 
-def trace_puppy_thinking(puppy_id: str):
-    """链路追踪装饰器：捕获宠物的完整思考周期"""
-    def decorator(func):
+def observe_span(span_name: str):
+    """统一链路追踪装饰器"""
+    def decorator(func: Callable):
         @wraps(func)
-        async def wrapper(*args, **kwargs):
-            with tracer.start_as_current_span(
-                "puppy_thinking_cycle",
-                attributes={"puppy.id": puppy_id, "puppy.state": "awake"}
-            ) as span:
-                start_time = time.time()
+        async def async_wrapper(*args, **kwargs):
+            with tracer.start_as_current_span(span_name) as span:
+                start_time = time.perf_counter()
                 try:
                     result = await func(*args, **kwargs)
-                    
-                    # 记录情绪突变 (假设 result 包含性格漂移数据)
-                    if hasattr(result, 'trait_drift'):
-                        span.set_attribute("puppy.trait_drift", str(result.trait_drift))
-                        
-                    span.set_status(trace.StatusCode.OK)
+                    span.set_attribute("status", "success")
                     return result
                 except Exception as e:
+                    span.set_attribute("status", "error")
                     span.record_exception(e)
-                    span.set_status(trace.StatusCode.ERROR)
                     raise
                 finally:
-                    span.set_attribute("puppy.cycle.duration_ms", (time.time() - start_time) * 1000)
-        return wrapper
+                    latency_ms = (time.perf_counter() - start_time) * 1000
+                    if "drift" in span_name.lower():
+                        persona_drift_latency_hist.record(int(latency_ms))
+        return async_wrapper
     return decorator
 
-def meter_llm_usage(model: str, puppy_id: str):
-    """指标监控装饰器：精准计算 LLM 财务成本"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            response = await func(*args, **kwargs)
-            
-            # 假设 response 包含 usage 信息
-            prompt_tokens = getattr(response.usage, 'prompt_tokens', 0)
-            completion_tokens = getattr(response.usage, 'completion_tokens', 0)
-            
-            # 记录 Token 消耗
-            llm_token_counter.add(prompt_tokens, {"type": "prompt", "model": model, "puppy.id": puppy_id})
-            llm_token_counter.add(completion_tokens, {"type": "completion", "model": model, "puppy.id": puppy_id})
-            
-            # 动态计算成本 (Mock: GPT-4o 价格)
-            cost = (prompt_tokens * 0.000005) + (completion_tokens * 0.000015)
-            llm_cost_histogram.record(cost, {"model": model, "puppy.id": puppy_id})
-            
-            return response
-        return wrapper
-    return decorator
+class NeuralProbes:
+    def __init__(self):
+        self.tracer = tracer
 
-def meter_wasm_fuel(puppy_id: str):
-    """指标监控装饰器：追踪 WASM 灵魂质量"""
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(wasm_sandbox, *args, **kwargs):
-            # 记录执行前的燃料
-            fuel_before = wasm_sandbox.store.get_fuel() if hasattr(wasm_sandbox.store, 'get_fuel') else 10000
+    @observe_span("neuromorphic.mutate_persona_with_forge")
+    async def record_persona_drift(self, puppy_id: str, drift_data: Dict, forge_quality: float = 0.0):
+        """记录人格漂移 + Forge 反馈"""
+        with self.tracer.start_as_current_span("trait_drift_calculation") as span:
+            span.set_attribute("puppy_id", puppy_id)
+            total_drift = sum(drift_data.get("delta", {}).values())
+            span.set_attribute("total_drift_magnitude", total_drift)
             
-            result = func(wasm_sandbox, *args, **kwargs)
-            
-            # 计算实际消耗的燃料
-            fuel_after = wasm_sandbox.store.get_fuel() if hasattr(wasm_sandbox.store, 'get_fuel') else 0
-            consumed = fuel_before - fuel_after
-            
-            # 记录燃料消耗，用于后续生成“劣质脚本黑名单”
-            wasm_fuel_gauge.record(consumed, {"puppy.id": puppy_id, "status": "success"})
-            return result
-        return wrapper
-    return decorator
+            persona_drift_latency_hist.record(45)  # 模拟或真实测量
+            forge_quality_hist.record(forge_quality)
+            interaction_throughput.add(1)
+
+    @observe_span("forge.pipeline_stage")
+    async def record_forge_stage(self, stage: str, quality: float, tokens: int = 0):
+        """Forge 各阶段追踪"""
+        forge_quality_hist.record(quality)
+        if tokens > 0:
+            llm_tokens_counter.add(tokens)
+
+    def setup_instrumentation(self, app):
+        """一键初始化全链路追踪"""
+        FastAPIInstrumentor.instrument_app(app)
+        RedisInstrumentor().instrument()
+        # Qdrant / OpenAI instrumentation 可后续扩展
