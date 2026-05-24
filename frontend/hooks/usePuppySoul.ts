@@ -1,153 +1,80 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { puppyDB, PuppySoul, PetMemory } from '@/lib/petDB';
-import { puppyAPI } from '@/lib/api';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { usePuppySoul } from './usePuppySoul';
 
-export function usePuppySoul(soulId: string = 'default_mad_dog') {
-  const [soul, setSoul] = useState<PuppySoul | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+export function useSoulWebSocket(soulId: string = 'default_mad_dog') {
+  const socketRef = useRef<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const { soul, addInteraction: localAddInteraction } = usePuppySoul(soulId);
 
-  // 监听网络状态
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+  const connect = useCallback(() => {
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
+      .replace(/^http/, 'ws');
+    
+    const ws = new WebSocket(`${baseUrl}/ws/soul/${soulId}`);
+    socketRef.current = ws;
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+    ws.onopen = () => {
+      console.log(`🚀 灵魂 ${soulId} 已进入实时共振状态`);
+      setIsConnected(true);
     };
-  }, []);
 
-  // 初始化灵魂
-  useEffect(() => {
-    const initSoul = async () => {
+    ws.onmessage = (event) => {
       try {
-        setLoading(true);
-        await puppyDB.init();
-
-        let currentSoul = await puppyDB.loadSoul(soulId);
-
-        if (!currentSoul) {
-          // 创建初始疯狗灵魂
-          currentSoul = {
-            id: soulId,
-            name: "狂暴小狗",
-            level: 1,
-            experience: 0,
-            traits: {
-              loyalty: 65,
-              chaos: 85,
-              curiosity: 92,
-              aggression: 48,
-              affection: 78,
-            },
-            memories: [],
-            lastActive: Date.now(),
-            totalInteractions: 0,
-            evolutionStage: 'puppy' as const,
-          };
-          await puppyDB.saveSoul(currentSoul);
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'soul_update') {
+          console.log('🌟 接收到实时灵魂漂移:', data.trait_changes);
+          // 这里可以触发前端 UI 更新（性格动画等）
         }
-
-        setSoul(currentSoul);
-      } catch (err) {
-        setError('灵魂初始化失败');
-        console.error(err);
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.error('WebSocket 消息解析失败', e);
       }
     };
 
-    initSoul();
+    ws.onclose = () => {
+      console.log('⚡ 共振通道断开，3秒后尝试重连...');
+      setIsConnected(false);
+      setTimeout(connect, 3000);
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket 错误:', error);
+    };
+
+    return ws;
   }, [soulId]);
 
-  // 添加交互（核心方法）
-  const addInteraction = useCallback(async (content: string, actionType: string = 'chat') => {
-    if (!soul) return null;
+  // 自动连接
+  useEffect(() => {
+    const ws = connect();
+    return () => {
+      ws.close();
+    };
+  }, [connect]);
 
-    const impact = Math.floor(Math.random() * 15) + 5;
-    const mood = Math.floor(Math.random() * 40) - 20;
-
-    // 1. 本地立即记录（实时反馈）
-    await puppyDB.addMemory(soul.id, {
+  // 实时发送交互（优先走 WebSocket）
+  const sendInteraction = useCallback(async (content: string, action: string = 'chat') => {
+    const message = {
       type: 'interaction',
-      content,
-      impact,
-      mood,
-      timestamp: Date.now(),
-    });
+      action,
+      content
+    };
 
-    // 刷新本地状态
-    const updatedSoul = await puppyDB.loadSoul(soul.id);
-    if (updatedSoul) setSoul(updatedSoul);
-
-    // 2. 尝试云端同步（联网时）
-    if (isOnline) {
-      try {
-        const cloudResult = await puppyAPI.interact(soul.id, actionType, content);
-        
-        // 用云端结果覆盖本地进化
-        if (cloudResult?.soul) {
-          await puppyDB.saveSoul(cloudResult.soul);
-          setSoul(cloudResult.soul);
-          return cloudResult;
-        }
-      } catch (err) {
-        console.log('🌩️ 云端失联，使用本地叛变进化');
-      }
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify(message));
+      console.log('📡 已通过 WebSocket 实时发送灵魂交互');
+    } else {
+      // 降级到本地 IndexedDB + HTTP
+      console.log('🌐 WebSocket 未连接，降级本地模式');
+      await localAddInteraction(content, action);
     }
-
-    return { success: true, localOnly: !isOnline };
-  }, [soul, isOnline]);
-
-  // 强制进化
-  const evolve = useCallback(async () => {
-    if (!soul) return;
-
-    try {
-      let result;
-      if (isOnline) {
-        result = await puppyAPI.evolve(soul.id);
-      }
-
-      // 本地进化逻辑
-      const newSoul = { ...soul };
-      newSoul.level = Math.min(30, newSoul.level + 1);
-      newSoul.experience += 100;
-
-      Object.keys(newSoul.traits).forEach(key => {
-        newSoul.traits[key] = Math.min(100, Math.max(0, newSoul.traits[key] + 8));
-      });
-
-      await puppyDB.saveSoul(newSoul);
-      setSoul(newSoul);
-
-      return result || { success: true };
-    } catch (err) {
-      console.error('进化失败', err);
-    }
-  }, [soul, isOnline]);
-
-  // 获取最新记忆
-  const getRecentMemories = useCallback(async (limit = 10): Promise<PetMemory[]> => {
-    if (!soul) return [];
-    return puppyDB.getAllMemories(soul.id).then(memories => memories.slice(0, limit));
-  }, [soul]);
+  }, [localAddInteraction]);
 
   return {
-    soul,
-    loading,
-    error,
-    isOnline,
-    addInteraction,
-    evolve,
-    getRecentMemories,
-    refresh: () => window.location.reload(), // 强制刷新灵魂
+    sendInteraction,
+    isConnected,
+    soul
   };
 }
