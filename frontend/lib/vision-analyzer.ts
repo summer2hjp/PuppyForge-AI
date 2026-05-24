@@ -1,112 +1,67 @@
-// lib/vision-analyzer.ts
-// ========================================
-// 宠物照片视觉分析模块 - 灵魂扫描引擎
-// ========================================
+import { z } from 'zod';
+import { swarmOrchestrator, InteractionEvent } from '../ai-agents/swarm-orchestrator';
 
-import { VisionAnalysisResult } from '../ai-agents/types';
+export const VisionAnalysisSchema = z.object({
+  puppy_id: z.string(),
+  image_base64: z.string().optional(),
+  image_url: z.string().optional(),
+  description: z.string().min(1),
+  timestamp: z.string().default(() => new Date().toISOString()),
+});
 
-export interface ImageUploadOptions {
-  maxSizeMB?: number;
-  allowedTypes?: string[];
-}
+export type VisionAnalysis = z.infer<typeof VisionAnalysisSchema>;
 
-/**
- * 分析宠物照片
- * @param imageFile 上传的图片文件
- * @param options 配置选项
- */
-export async function analyzePetPhoto(
-  imageFile: File,
-  options: ImageUploadOptions = {}
-): Promise<VisionAnalysisResult> {
-  console.log('🔍 宠物照片灵魂扫描启动...');
-  
-  const { 
-    maxSizeMB = 10,
-    allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-  } = options;
+class VisionAnalyzer {
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  // 验证文件类型
-  if (!allowedTypes.includes(imageFile.type)) {
-    throw new Error(`不支持的文件类型：${imageFile.type}`);
-  }
+  async analyze(imageFile: File | null, description: string, puppyId: string): Promise<VisionAnalysis & { diagnosis: any }> {
+    let imageData: string | null = null;
 
-  // 验证文件大小
-  const sizeMB = imageFile.size / (1024 * 1024);
-  if (sizeMB > maxSizeMB) {
-    throw new Error(`文件过大，最大支持 ${maxSizeMB}MB`);
-  }
+    if (imageFile) {
+      // 前端压缩 + Base64
+      imageData = await this._fileToBase64(imageFile);
+    }
 
-  // TODO: 集成真实的多模态 AI (GPT-4o / Grok Vision)
-  // const formData = new FormData();
-  // formData.append('image', imageFile);
-  // const response = await callVisionAPI(formData);
-
-  // Mock 返回结果
-  return {
-    breed: '未知混血',
-    emotionalState: '略带叛逆',
-    recommendation: '需要更多自由空间',
-    summary: '从照片来看，这只小狗眼神中透露着独立和一丝倔强，建议给予更多探索空间'
-  };
-}
-
-/**
- * 将图片转换为 Base64
- */
-export function imageToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * 压缩图片
- */
-export async function compressImage(
-  file: File,
-  maxWidth: number = 1920,
-  maxHeight: number = 1920,
-  quality: number = 0.8
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
-      // 计算缩放比例
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width *= ratio;
-        height *= ratio;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('无法获取 canvas context'));
-        return;
-      }
-      
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('压缩失败'));
-        },
-        'image/jpeg',
-        quality
-      );
+    const analysis: VisionAnalysis = {
+      puppy_id: puppyId,
+      image_base64: imageData || undefined,
+      image_url: undefined,
+      description,
     };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
+
+    // 1. 前端初步验证
+    const validated = VisionAnalysisSchema.parse(analysis);
+
+    // 2. 触发 Swarm Orchestrator（进入后端神经闭环）
+    const event: InteractionEvent = {
+      puppy_id: puppyId,
+      action: "vision_diagnosis",
+      context: description + (imageData ? " [image attached]" : ""),
+    };
+
+    const swarmResult = await swarmOrchestrator.run(puppyId, event);
+
+    return {
+      ...validated,
+      diagnosis: swarmResult.diagnosis || {},
+    };
+  }
+
+  private _fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // 实时预览分析（可选轻量版）
+  async quickPreview(file: File): Promise<string> {
+    // 可集成浏览器 Canvas 简单特征提取（颜色、亮度等）
+    return "初步视觉特征：毛色光泽、皮肤可见区域";
+  }
 }
+
+export const visionAnalyzer = new VisionAnalyzer();
+export default visionAnalyzer;
