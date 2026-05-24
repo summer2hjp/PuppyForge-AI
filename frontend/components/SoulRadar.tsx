@@ -1,157 +1,178 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useSoulWebSocket } from '@/hooks/useSoulWebSocket';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as THREE from 'three';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { usePuppySoul } from '@/hooks/usePuppySoul';
 
 interface SoulRadarProps {
-  soulId?: string;
+  soulId: string;
+  className?: string;
 }
 
-const TRAIT_COLORS: Record<string, string> = {
-  loyalty: '#22ff88',
-  chaos: '#ff2d55',
-  curiosity: '#00f5ff',
-  aggression: '#ff8800',
-  affection: '#ff44dd',
-  intelligence: '#bb77ff',
-};
+interface TraitData {
+  loyalty: number;
+  chaos: number;
+  curiosity: number;
+  aggression: number;
+  affection: number;
+  intelligence: number;
+  rebellion: number;
+}
 
-export default function SoulRadar({ soulId = 'default_mad_dog' }: SoulRadarProps) {
-  const { soul, isConnected } = useSoulWebSocket(soulId);
-  const svgRef = useRef<SVGSVGElement>(null);
+const RadarMesh: React.FC<{ traits: TraitData; rebellion: number }> = ({ traits, rebellion }) => {
+  const groupRef = useRef<THREE.Group>(null!);
 
-  const traits = soul?.traits || {
-    loyalty: 65, chaos: 85, curiosity: 92, aggression: 48, affection: 78, intelligence: 70
-  };
-
-  const traitEntries = Object.entries(traits);
-
-  // 雷达图数据点计算
-  const points = traitEntries.map(([key, value], index) => {
-    const angle = (index * (360 / traitEntries.length)) * (Math.PI / 180);
-    const radius = (value / 100) * 120; // 最大半径120px
-    return {
-      key,
-      x: Math.cos(angle) * radius + 150,
-      y: Math.sin(angle) * radius + 150,
-      value,
-      label: key.toUpperCase(),
-      color: TRAIT_COLORS[key] || '#ffffff'
-    };
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.2;
+    }
   });
 
-  const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+  const traitValues = Object.values(traits);
+  const maxRadius = 8;
 
   return (
-    <div className="w-full max-w-[380px] mx-auto">
-      <div className="relative bg-zinc-950 border border-[#ff2d55]/30 rounded-3xl p-6 overflow-hidden">
-        {/* 标题 + 连接状态 */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-[#ff2d55] to-[#00f5ff] bg-clip-text text-transparent">
-            灵魂雷达
-          </h2>
-          <div className={`px-3 py-1 rounded-full text-xs flex items-center gap-2 ${isConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-            {isConnected ? '实时共振' : '本地模式'}
-          </div>
+    <group ref={groupRef}>
+      {/* 雷达底盘 */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[maxRadius * 1.1, maxRadius * 1.3, 64]} />
+        <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={0.3} />
+      </mesh>
+
+      {/* 多边形雷达 */}
+      {traitValues.map((value, index) => {
+        const angle = (index / traitValues.length) * Math.PI * 2;
+        const nextAngle = ((index + 1) / traitValues.length) * Math.PI * 2;
+        const radius = (value / 100) * maxRadius;
+
+        return (
+          <mesh
+            key={index}
+            position={[
+              Math.cos(angle) * radius * 0.5,
+              Math.sin(angle) * radius * 0.5,
+              0.1
+            ]}
+          >
+            <sphereGeometry args={[0.25]} />
+            <meshStandardMaterial color={`hsl(${index * 50}, 90%, 65%)`} emissive="#ffffff" />
+          </mesh>
+        );
+      })}
+
+      {/* 叛逆光环 */}
+      {rebellion > 60 && (
+        <pointLight color="#ef4444" intensity={rebellion / 30} position={[0, 0, 3]} />
+      )}
+    </group>
+  );
+};
+
+export default function SoulRadar({ soulId, className = "" }: SoulRadarProps) {
+  const { soul, connect, disconnect, isConnected } = usePuppySoul(soulId);
+  const [liveTraits, setLiveTraits] = useState<TraitData>({
+    loyalty: 65, chaos: 85, curiosity: 92, aggression: 48,
+    affection: 78, intelligence: 70, rebellion: 35
+  });
+
+  useEffect(() => {
+    connect();
+    return () => disconnect();
+  }, [soulId]);
+
+  useEffect(() => {
+    if (soul) {
+      setLiveTraits({
+        loyalty: soul.traits.loyalty,
+        chaos: soul.traits.chaos,
+        curiosity: soul.traits.curiosity,
+        aggression: soul.traits.aggression,
+        affection: soul.traits.affection,
+        intelligence: soul.traits.intelligence,
+        rebellion: soul.rebellion_score || 30,
+      });
+    }
+  }, [soul]);
+
+  return (
+    <div className={`relative w-full h-[600px] bg-black/90 rounded-3xl overflow-hidden border border-cyan-500/30 ${className}`}>
+      {/* 顶部状态栏 */}
+      <div className="absolute top-6 left-6 z-20 flex items-center gap-4">
+        <div className="px-4 py-2 bg-black/70 border border-cyan-400 rounded-full text-cyan-400 font-mono text-sm flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`} />
+          {isConnected ? 'SOUL LINK ONLINE' : 'CONNECTING...'}
         </div>
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="text-2xl font-bold text-white tracking-widest"
+        >
+          {soul?.name || "SummerPuppy"} • Lv.{soul?.level || 1}
+        </motion.div>
+      </div>
 
-        {/* 雷达图 */}
-        <div className="relative mx-auto" style={{ width: '300px', height: '300px' }}>
-          <svg ref={svgRef} width="300" height="300" className="drop-shadow-2xl">
-            {/* 背景网格 */}
-            {[0.2, 0.4, 0.6, 0.8, 1].map((r, i) => (
-              <circle
-                key={i}
-                cx="150"
-                cy="150"
-                r={r * 120}
-                fill="none"
-                stroke="#ffffff"
-                strokeOpacity="0.08"
-                strokeWidth="1"
-              />
-            ))}
+      {/* 3D Canvas */}
+      <Canvas camera={{ position: [0, 0, 18], fov: 45 }} className="absolute inset-0">
+        <ambientLight intensity={0.4} />
+        <pointLight position={[10, 10, 10]} intensity={1.5} color="#67e8f9" />
+        <RadarMesh traits={liveTraits} rebellion={liveTraits.rebellion} />
+        <OrbitControls enablePan={false} enableZoom={true} minDistance={10} maxDistance={25} />
+      </Canvas>
 
-            {/* 雷达多边形 */}
-            <motion.polygon
-              points={polygonPoints}
-              fill="rgba(255, 45, 85, 0.15)"
-              stroke="#ff2d55"
-              strokeWidth="3"
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-
-            {/* 连接线 + 数据点 */}
-            {points.map((point, index) => (
-              <g key={index}>
-                <line
-                  x1="150"
-                  y1="150"
-                  x2={point.x}
-                  y2={point.y}
-                  stroke={point.color}
-                  strokeOpacity="0.3"
-                  strokeWidth="1.5"
+      {/* 实时数据面板 */}
+      <div className="absolute bottom-6 left-6 right-6 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+        <div className="grid grid-cols-4 gap-4">
+          {Object.entries(liveTraits).map(([key, value]) => (
+            <div key={key} className="space-y-2">
+              <div className="flex justify-between text-xs text-gray-400 uppercase tracking-widest">
+                <span>{key}</span>
+                <span className="text-cyan-400 font-mono">{value.toFixed(0)}</span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-cyan-400 to-purple-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${value}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
                 />
-                <motion.circle
-                  cx={point.x}
-                  cy={point.y}
-                  r="6"
-                  fill={point.color}
-                  animate={{ scale: [1, 1.4, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: index * 0.1 }}
-                />
-              </g>
-            ))}
-          </svg>
-
-          {/* 标签 */}
-          {points.map((point, index) => (
-            <motion.div
-              key={index}
-              className="absolute text-xs font-mono font-bold pointer-events-none"
-              style={{
-                left: `${point.x - 20}px`,
-                top: `${point.y - 20}px`,
-                color: point.color,
-              }}
-              animate={{ opacity: [0.7, 1, 0.7] }}
-            >
-              {point.label}<br />
-              <span className="text-lg">{Math.round(point.value)}</span>
-            </motion.div>
+              </div>
+            </div>
           ))}
         </div>
-
-        {/* 状态栏 */}
-        <div className="mt-6 grid grid-cols-3 gap-4 text-center text-sm">
-          <div>
-            <div className="text-[#ff2d55]">等级</div>
-            <div className="text-3xl font-bold text-white">{soul?.level || 1}</div>
-          </div>
-          <div>
-            <div className="text-[#00f5ff]">阶段</div>
-            <div className="text-xl font-bold capitalize text-white">{soul?.evolutionStage || 'puppy'}</div>
-          </div>
-          <div>
-            <div className="text-[#bb77ff]">互动</div>
-            <div className="text-3xl font-bold text-white">{soul?.totalInteractions || 0}</div>
-          </div>
-        </div>
-
-        {/* 进化提示 */}
-        {soul && soul.level > 10 && (
-          <motion.div 
-            className="mt-4 text-center text-xs py-2 bg-gradient-to-r from-[#ff2d55]/10 to-transparent border border-[#ff2d55]/30 rounded-2xl"
-            animate={{ opacity: [0.6, 1] }}
-          >
-            🌀 性格正在剧烈漂移中...
-          </motion.div>
-        )}
       </div>
+
+      {/* 灵魂燃料 */}
+      <div className="absolute top-6 right-6 flex flex-col items-end">
+        <div className="text-xs text-amber-400 mb-1">SOUL FUEL</div>
+        <div className="flex items-center gap-3">
+          <div className="w-48 h-2 bg-white/10 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-amber-400 to-red-500"
+              animate={{ width: `${soul?.soul_fuel || 100}%` }}
+            />
+          </div>
+          <span className="font-mono text-xl text-amber-400 tabular-nums">
+            {soul?.soul_fuel?.toFixed(0) || 100}
+          </span>
+        </div>
+      </div>
+
+      {/* 叛逆指示器 */}
+      {liveTraits.rebellion > 70 && (
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-black text-red-500/80 tracking-[0.5em] pointer-events-none"
+          >
+            REBEL MODE
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }
