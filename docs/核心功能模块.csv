@@ -1,5 +1,5 @@
-﻿存储引擎,负责的数据领域 (Supabase/Postgres 只管这些),对应 PuppyForge-AI 概念
-Supabase (Postgres),1. 身份与资产：用户表、宠物元数据（ID、名字、创建时间）。<br>2. 财务账本：token_ledger (记录每次 VLM 推理的 Token 成本与财务扣减)。<br>3. 事件备份：Event Sourcing 的冷数据持久化。,AI Soul Telemetry (劣质灵魂黑名单)<br>Zero-Trust Compute Gateway (算力本位)
+﻿前端核心组件,负责的展示信息,对应 PuppyForge-AI 概念
+Supabase (Postgres),1. HealthScoreCard.tsx：健康分数展示，支持趋势指示、人格 Trait Drift 可视化、WebSocket 实时同步。<br>2. 财务账本：token_ledger (记录每次 VLM 推理的 Token 成本与财务扣减)。<br>3. 事件备份：Event Sourcing 的冷数据持久化。,AI Soul Telemetry (劣质灵魂黑名单)<br>Zero-Trust Compute Gateway (算力本位)
 Qdrant,高维记忆空间：宠物的长期记忆、性格张量 (Trait Drift)、多模态向量。,Neuromorphic State (神经形态状态)
 Cloudflare DO,实时灵魂：WebSocket 长连接、短期工作记忆、当前会话状态。,Edge-Hybrid Matrix (边缘灵魂维持)
 Redis,热数据与限流：实时消息队列 (Streams)、Lua 脚本原子级算力扣减。,零拷贝视觉摄入、并发超卖防护
