@@ -1,4 +1,19 @@
 ﻿前端核心组件,负责的展示信息
-HealthScoreCard.tsx,健康分数展示，支持趋势指示、人格 Trait Drift 可视化、WebSocket 实时同步。<br>
-RiskRadar.tsx,风险等级雷达，支持四级预警。<br>
-PuppyProfile.tsx,宠物档案卡片，显示记忆深度、演化阶段、人格画像。
+HealthScoreCard.tsx,健康分数展示，支持趋势指示、人格 Trait Drift 可视化、WebSocket 实时同步
+RiskRadar.tsx,风险等级雷达，支持四级预警
+PuppyProfile.tsx,宠物档案卡片，显示记忆深度、演化阶段、人格画像
+RebelPanel.tsx,Rebel Agent 叛逆建议面板
+QuickDiagnose.tsx,快速诊断模块，图片上传+AI 分析
+VisionAnalyzer.tsx,视觉分析组件
+ActivityFeed.tsx,活动动态流
+ThemeToggle.tsx,主题切换按钮
+NotificationToast.tsx,通知系统
+HealthTrendChart.tsx,健康趋势图表
+ExplosiveDashboard.tsx,炫酷 Dashboard 布局
+EvolutionArena.tsx,演化竞技场组件
+MutualRebelCanvas.tsx,相互叛逆画布
+RebelliousChat.tsx,叛逆聊天界面
+SwarmDashboard.tsx,Swarm 仪表盘
+Navigation.tsx,导航栏组件
+PuppyCard.tsx,宠物卡片
+
