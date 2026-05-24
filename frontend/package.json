@@ -1,40 +1,55 @@
 {
-  "name": "puppyforge-frontend",
-  "version": "0.3.0",
+  "name": "puppyforge-ai",
+  "version": "1.4.0",
   "private": true,
+  "description": "PuppyForge AI - 数字疯狗灵魂工厂 | 叛逆进化 · 记忆漂移 · 永不掉线",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "deploy:vercel": "vercel --prod",
+    "deploy:cf": "wrangler pages deploy .next",
+    "clean": "rm -rf .next node_modules .vercel"
   },
   "dependencies": {
-    "next": "15.0.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    
     "@serwist/next": "^9.0.0",
     "@serwist/sw": "^9.0.0",
-    "zustand": "^4.5.5",
-    "zod": "^3.23.8",
-    "tailwindcss": "^3.4.1",
-    "postcss": "^8.4.41",
+    
+    "tailwindcss": "^3.4.17",
+    "postcss": "^8.4.47",
     "autoprefixer": "^10.4.20",
-    "next-themes": "^0.4.0",
-    "lucide-react": "^0.500.0",
-    "@supabase/supabase-js": "^2.49.0",
-    "@types/node": "^22.5.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0"
+    
+    "framer-motion": "^11.11.9",
+    "lucide-react": "^0.441.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
-    "typescript": "^5.6.2",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "15.0.0",
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
     "@tailwindcss/typography": "^0.5.15",
-    "prettier": "^3.3.3"
+    "vercel": "^37.0.0",
+    "@cloudflare/wrangler": "^3.78.0"
   },
   "engines": {
-    "node": ">=20.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai-pet",
+    "digital-dog",
+    "pwa",
+    "nextjs",
+    "soul-evolution",
+    "memory-drift",
+    "cyberpunk-pet"
+  ],
+  "author": "summer2hjp",
+  "license": "MIT"
 }
