@@ -49,4 +49,35 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     GITHUB_REDIRECT_URI: str = "http://localhost:8000/auth/github/callback"
 
-    # ==================== 性能 & 限流 =================
+    # ==================== 性能 & 限流 ====================
+    RATE_LIMIT_PER_MINUTE: int = 60
+    MAX_CONCURRENT_REQUESTS: int = 80
+
+    # ==================== 灵魂引擎配置 ====================
+    DEFAULT_SOUL_FUEL: float = 100.0
+    SOUL_FUEL_DECAY_RATE: float = 0.08
+    MAX_MEMORIES_PER_SOUL: int = 200
+    TRAIT_DRIFT_INTENSITY: float = 1.0
+
+    # ==================== 文件上传配置 ====================
+    MAX_UPLOAD_SIZE_MB: int = 15
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
+
+    # ==================== Redis（可选，未来用于 Celery + 缓存） ====================
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = True
+        extra = "ignore"
+
+
+# 单例模式，性能优化
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+# 全局快捷访问
+settings = get_settings()
