@@ -1,82 +1,66 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from backend.core.neuromorphic_engine import NeuromorphicEngine, InteractionEvent
 from backend.agents.orchestrator import SwarmOrchestrator
 from backend.forge.pipeline import ForgePipeline
 from backend.observability.neural_probes import NeuralProbes, tracer
+from backend.agents.rebel_agent import rebel_agent
 import uvicorn
-from typing import Dict, Any
+from typing import Dict, Any, List
+import asyncio
+import json
 
-app = FastAPI(
-    title="PuppyForge-AI",
-    version="0.2.0",
-    description="神经形态宠物数字灵魂锻造平台 - 诊断→预测→干预→记忆演化闭环"
-)
+app = FastAPI(title="PuppyForge-AI", version="0.3.0")
 
-# M2 可观测性初始化
 probes = NeuralProbes()
 probes.setup_instrumentation(app)
 
-# 全局核心引擎实例（单例模式）
 engine = NeuromorphicEngine()
 orchestrator = SwarmOrchestrator()
 forge = ForgePipeline()
 
-@app.post("/api/v1/interact")
-async def interact(event: InteractionEvent) -> Dict[str, Any]:
-    """全栈 M1+M2 统一入口 - 带完整可观测性"""
-    with tracer.start_as_current_span("api.interact") as span:
-        span.set_attribute("puppy_id", event.puppy_id)
-        span.set_attribute("action", event.action)
-        span.set_attribute("has_vision", bool(event.visual_features))
+# ==================== WebSocket 实时人格同步 ====================
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.puppy_subscribers: Dict[str, List[WebSocket]] = {}
 
-        # 1. 神经形态引擎处理（事件流 + 异步人格演化 + Forge 联动）
-        event_id = await engine.process_interaction(event)
+    async def connect(self, websocket: WebSocket, puppy_id: str):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        if puppy_id not in self.puppy_subscribers:
+            self.puppy_subscribers[puppy_id] = []
+        self.puppy_subscribers[puppy_id].append(websocket)
 
-        # 2. Swarm Agent 编排诊断
-        swarm_result = await orchestrator.run(
-            puppy_id=event.puppy_id,
-            input_data=event.model_dump()
-        )
+    def disconnect(self, websocket: WebSocket, puppy_id: str):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+        if puppy_id in self.puppy_subscribers:
+            if websocket in self.puppy_subscribers[puppy_id]:
+                self.puppy_subscribers[puppy_id].remove(websocket)
 
-        # 3. Forge 炼金生成个性化干预资产
-        forge_result = await forge.run_forge(
-            puppy_id=event.puppy_id,
-            base_prompt=f"基于 {event.action} 和视觉特征生成高品质健康干预内容",
-            context={
-                "swarm": swarm_result.model_dump(),
-                "event": event.model_dump()
-            }
-        )
+    async def broadcast_to_puppy(self, puppy_id: str, message: Dict):
+        """定向广播给订阅该 puppy_id 的客户端"""
+        if puppy_id not in self.puppy_subscribers:
+            return
+        dead_connections = []
+        for connection in self.puppy_subscribers[puppy_id]:
+            try:
+                await connection.send_text(json.dumps(message))
+            except:
+                dead_connections.append(connection)
+        # 清理断开连接
+        for dead in dead_connections:
+            self.disconnect(dead, puppy_id)
 
-        # 4. 记录可观测性探针
-        await probes.record_persona_drift(
-            event.puppy_id,
-            {"delta": {}},  # 实际由 engine 内部计算
-            forge_result.get("final_quality", 0.0)
-        )
-
-        return {
-            "event_id": event_id,
-            "status": "success",
-            "health_score": swarm_result.health_score,
-            "diagnosis": swarm_result.diagnosis,
-            "recommendations": swarm_result.recommendations,
-            "forge_asset": forge_result.get("asset"),
-            "persona_update": "triggered",
-            "observability": "fully_tracked"
-        }
+manager = ConnectionManager()
 
 
-@app.get("/api/v1/puppy/{puppy_id}/persona")
-async def get_persona(puppy_id: str):
-    """读取实时人格态"""
-    persona = await engine.get_persona(puppy_id)
-    return persona.model_dump()
-
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "
+@app.websocket("/ws/persona/{puppy_id}")
+async def websocket_persona(websocket: WebSocket, puppy_id: str):
+    """实时人格同步通道"""
+    await manager.connect(websocket, puppy_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text(json.dumps
