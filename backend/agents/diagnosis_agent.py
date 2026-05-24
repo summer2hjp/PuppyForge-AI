@@ -1,34 +1,21 @@
-from pydantic import BaseModel
-from typing import Dict, List, Optional
+from .base_agent import BaseAgent
+from typing import Dict, Any
 
-class DiagnosisResult(BaseModel):
-    condition: str
-    confidence: float
-    risk_level: int  # 1-10
-    suggestions: List[str]
-    explanation: str
-    visual_features: Optional[Dict[str, Any]] = None
+class DiagnosisAgent(BaseAgent):
+    def __init__(self):
+        super().__init__("DiagnosisAgent")
 
-
-class DiagnosisAgent:
-    async def analyze(self, input_data: Dict[str, Any]) -> Dict:
-        """支持视觉 + 文本的多模态诊断"""
-        context = input_data.get("context", "")
+    async def run(self, soul: PuppySoul, input_data: Dict[str, Any]) -> Dict:
         visual = input_data.get("visual_features", {})
+        context = input_data.get("context", "")
 
-        # 模拟智能诊断逻辑（生产环境接入 GPT-4o / LLaVA）
-        risk = 4 if any(k in context.lower() for k in ["红斑", "皮肤", "痒"]) else 2
+        prompt = f"作为宠物健康诊断Agent，基于以下信息给出专业诊断：\n视觉特征: {visual}\n行为上下文: {context}"
+
+        diagnosis_raw = await self._call_llm(prompt, response_format=None)
 
         return {
-            "condition": "轻度皮肤敏感" if risk > 3 else "整体健康良好",
-            "confidence": 0.87,
-            "risk_level": risk,
-            "suggestions": [
-                "补充 Omega-3 脂肪酸",
-                "保持皮肤干燥清洁",
-                "观察 48-72 小时",
-                "必要时咨询兽医"
-            ],
-            "explanation": "基于视觉特征与历史记忆的综合神经诊断",
-            "visual_features": visual or {"skin_condition": "mild_redness"}
+            "agent": self.name,
+            "diagnosis": diagnosis_raw,
+            "risk_level": 3 if "正常" in diagnosis_raw else 7,
+            "visual_insights": visual
         }
