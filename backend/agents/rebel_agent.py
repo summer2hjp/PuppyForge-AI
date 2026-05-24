@@ -1,6 +1,7 @@
 from .base_agent import BaseAgent
 from pydantic import BaseModel
 from typing import Dict
+from config import settings
 
 class RebelSuggestion(BaseModel):
     suggestion: str
@@ -12,18 +13,14 @@ class RebelSuggestion(BaseModel):
 class RebelAgent(BaseAgent):
     def __init__(self):
         super().__init__("RebelAgent")
-        self.fuel_consumption = 15.0  # 叛逆消耗更高
+        self.fuel_consumption = 15.0
 
     async def run(self, soul: PuppySoul, input_data: Dict[str, Any]) -> Dict:
-        swarm_result = input_data.get("swarm_result", {})
-        current_persona = soul.traits.model_dump()
-
         prompt = f"""你是极度叛逆的 Puppy Rebel Agent。
 当前灵魂: {soul.name} (叛逆度: {soul.rebellion_score})
-主流诊断: {swarm_result.get('diagnosis')}
 用户输入: {input_data.get('user_input')}
 
-生成**1条极其大胆、有趣、可能违反常规**的建议。"""
+生成1条极其大胆、有趣、可能违反常规的建议。"""
 
         result = await self._call_llm(prompt)
         suggestion = RebelSuggestion.model_validate(eval(result) if isinstance(result, str) else result)
