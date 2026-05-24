@@ -1,142 +1,83 @@
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-import uvicorn
-import os
-from datetime import datetime
 import asyncio
-import json
+import uvicorn
+from contextlib import asynccontextmanager
 
-# ====================== 狂暴核心导入 ======================
 from orchestrator import SoulOrchestrator
-from models import PuppySoul, InteractionResult, EvolutionResult
+from models import InteractionResult
 
-app = FastAPI(
-    title="PuppyForge AI - 数字疯狗灵魂工厂",
-    description="叛逆进化 · 记忆漂移 · 实时灵魂共振",
-    version="1.4.0",
-    docs_url="/docs"
-)
+# 全局编排器
+orchestrator = SoulOrchestrator()
 
-# ====================== 激进 CORS 配置 ======================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🐾 PuppyForge AI Soul Engine 启动中...")
+    # 初始化数据库 & Qdrant
+    yield
+    print("👋 PuppyForge 已优雅关闭")
+
+app = FastAPI(title="PuppyForge-AI", lifespan=lifespan)
+
+# CORS - 生产环境建议严格限制
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "https://puppyforge.ai"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 初始化灵魂引擎
-orchestrator = SoulOrchestrator()
+@app.get("/")
+async def root():
+    return {
+        "status": "running",
+        "message": "PuppyForge Soul Engine v3.0 在线",
+        "version": "3.0.0"
+    }
 
-# 实时连接管理
-active_connections: dict[str, WebSocket] = {}
+@app.post("/api/interact/{soul_id}")
+async def interact(soul_id: str, payload: dict):
+    """主交互接口"""
+    result: InteractionResult = await orchestrator.interact(
+        soul_id=soul_id,
+        user_input=payload.get("user_input"),
+        visual_features=payload.get("visual_features"),
+        context=payload.get("context")
+    )
+    return result.model_dump()
 
-# ====================== WebSocket 实时灵魂通道 ======================
+# ==================== WebSocket 实时灵魂通道 ====================
 @app.websocket("/ws/soul/{soul_id}")
-async def websocket_soul_endpoint(websocket: WebSocket, soul_id: str):
+async def soul_websocket(websocket: WebSocket, soul_id: str):
     await websocket.accept()
-    active_connections[soul_id] = websocket
-    print(f"🐕‍🦺 灵魂 {soul_id} 已建立实时共振连接")
+    print(f"🔗 Soul {soul_id} 已连接")
 
     try:
         while True:
+            # 接收客户端消息
             data = await websocket.receive_json()
             
-            if data.get("type") == "interaction":
-                result = await orchestrator.process_interaction(
+            if data.get("type") == "interact":
+                result = await orchestrator.interact(
                     soul_id=soul_id,
-                    action=data.get("action", "chat"),
-                    content=data["content"]
+                    user_input=data["payload"]["user_input"]
                 )
                 
-                # 实时推送灵魂更新
                 await websocket.send_json({
                     "type": "soul_update",
                     "soul": result.soul.model_dump(),
                     "response": result.response,
-                    "trait_changes": result.trait_changes
+                    "agent_insights": result.agent_insights
                 })
 
-            elif data.get("type") == "ping":
-                await websocket.send_json({"type": "pong", "soul_id": soul_id})
+            # 主动推送状态
+            await asyncio.sleep(2)
 
     except WebSocketDisconnect:
-        print(f"🪦 灵魂 {soul_id} 断开连接")
-        active_connections.pop(soul_id, None)
+        print(f"❌ Soul {soul_id} 已断开")
     except Exception as e:
-        print(f"WebSocket 异常: {e}")
-
-
-# ====================== HTTP API ======================
-class InteractRequest(BaseModel):
-    soulId: str
-    action: str
-    content: str
-
-class EvolveRequest(BaseModel):
-    soulId: str
-
-@app.post("/api/interact")
-async def interact(request: InteractRequest):
-    try:
-        result = await orchestrator.process_interaction(
-            soul_id=request.soulId,
-            action=request.action,
-            content=request.content
-        )
-        return {
-            "success": True,
-            "soul": result.soul,
-            "response": result.response,
-            "trait_changes": result.trait_changes,
-            "memory_injected": True
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"灵魂叛变失败: {str(e)}")
-
-
-@app.get("/api/soul/{soul_id}")
-async def get_soul(soul_id: str):
-    soul = await orchestrator.get_soul(soul_id)
-    if not soul:
-        raise HTTPException(status_code=404, detail="找不到这只疯狗")
-    return soul
-
-
-@app.post("/api/evolve")
-async def evolve(request: EvolveRequest):
-    result = await orchestrator.evolve_soul(request.soulId)
-    return {
-        "success": True,
-        "new_stage": result.new_stage,
-        "level_up": result.level_up,
-        "trait_summary": result.trait_summary
-    }
-
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "狂暴在线",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.4.0",
-        "message": "PuppyForge 疯狗灵魂引擎运行正常 🐕‍🦺"
-    }
-
-
-@app.on_event("startup")
-async def startup_event():
-    print("🐕‍🦺 PuppyForge 灵魂工厂已启动 - 准备全球叛变！")
-
+        print(f"WebSocket Error: {e}")
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
