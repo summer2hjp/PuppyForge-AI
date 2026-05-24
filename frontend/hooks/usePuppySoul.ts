@@ -1,131 +1,153 @@
-// frontend/lib/petDB.ts
-const DB_NAME = 'PuppyForgeSoulDB';
-const DB_VERSION = 3; // 每次 schema 升级就 +1
+'use client';
 
-export interface PetMemory {
-  id: string;
-  timestamp: number;
-  type: 'interaction' | 'evolution' | 'trait_drift' | 'emotion';
-  content: string;
-  impact: number; // 对性格的影响值
-  mood: number; // -100 ~ 100
-}
+import { useEffect, useState, useCallback } from 'react';
+import { puppyDB, PuppySoul, PetMemory } from '@/lib/petDB';
+import { puppyAPI } from '@/lib/api';
 
-export interface PetTraits {
-  loyalty: number;
-  chaos: number;
-  curiosity: number;
-  aggression: number;
-  affection: number;
-  [key: string]: number;
-}
+export function usePuppySoul(soulId: string = 'default_mad_dog') {
+  const [soul, setSoul] = useState<PuppySoul | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
 
-export interface PuppySoul {
-  id: string;
-  name: string;
-  level: number;
-  experience: number;
-  traits: PetTraits;
-  memories: PetMemory[];
-  lastActive: number;
-  totalInteractions: number;
-  evolutionStage: 'puppy' | 'rebel' | 'legend';
-}
+  // 监听网络状态
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-// ==================== 狂暴 IndexedDB 引擎 ====================
-class PuppySoulDB {
-  private db: IDBDatabase | null = null;
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-  async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        this.db = request.result;
-        console.log('🐕‍🦺 PuppyForge 本地灵魂数据库已觉醒');
-        resolve();
-      };
+  // 初始化灵魂
+  useEffect(() => {
+    const initSoul = async () => {
+      try {
+        setLoading(true);
+        await puppyDB.init();
 
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
+        let currentSoul = await puppyDB.loadSoul(soulId);
 
-        if (!db.objectStoreNames.contains('souls')) {
-          const store = db.createObjectStore('souls', { keyPath: 'id' });
-          store.createIndex('lastActive', 'lastActive', { unique: false });
+        if (!currentSoul) {
+          // 创建初始疯狗灵魂
+          currentSoul = {
+            id: soulId,
+            name: "狂暴小狗",
+            level: 1,
+            experience: 0,
+            traits: {
+              loyalty: 65,
+              chaos: 85,
+              curiosity: 92,
+              aggression: 48,
+              affection: 78,
+            },
+            memories: [],
+            lastActive: Date.now(),
+            totalInteractions: 0,
+            evolutionStage: 'puppy' as const,
+          };
+          await puppyDB.saveSoul(currentSoul);
         }
 
-        if (!db.objectStoreNames.contains('memories')) {
-          const memStore = db.createObjectStore('memories', { keyPath: 'id' });
-          memStore.createIndex('soulId', 'soulId', { unique: false });
-          memStore.createIndex('timestamp', 'timestamp', { unique: false });
-        }
-      };
-    });
-  }
-
-  async saveSoul(soul: PuppySoul): Promise<void> {
-    if (!this.db) await this.init();
-    return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction('souls', 'readwrite');
-      const store = tx.objectStore('souls');
-      store.put(soul);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  async loadSoul(soulId: string): Promise<PuppySoul | null> {
-    if (!this.db) await this.init();
-    return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction('souls', 'readonly');
-      const store = tx.objectStore('souls');
-      const request = store.get(soulId);
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async addMemory(soulId: string, memory: Omit<PetMemory, 'id'>): Promise<void> {
-    if (!this.db) await this.init();
-    const fullMemory: PetMemory = {
-      ...memory,
-      id: `mem_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        setSoul(currentSoul);
+      } catch (err) {
+        setError('灵魂初始化失败');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const tx = this.db!.transaction(['memories', 'souls'], 'readwrite');
-    tx.objectStore('memories').add(fullMemory);
+    initSoul();
+  }, [soulId]);
 
-    // 同步更新主灵魂（记忆漂移影响性格）
-    const soul = await this.loadSoul(soulId);
-    if (soul) {
-      soul.memories.push(fullMemory);
-      soul.lastActive = Date.now();
-      soul.totalInteractions++;
-      
-      // 激进性格漂移
-      if (memory.impact > 0) {
-        Object.keys(soul.traits).forEach(key => {
-          soul.traits[key] = Math.max(0, Math.min(100, 
-            soul.traits[key] + (memory.impact * (Math.random() - 0.3))
-          ));
-        });
-      }
-      tx.objectStore('souls').put(soul);
-    }
-    tx.oncomplete = () => console.log('🧠 记忆已注入本地灵魂');
-  }
+  // 添加交互（核心方法）
+  const addInteraction = useCallback(async (content: string, actionType: string = 'chat') => {
+    if (!soul) return null;
 
-  async getAllMemories(soulId: string): Promise<PetMemory[]> {
-    if (!this.db) await this.init();
-    return new Promise((resolve) => {
-      const tx = this.db!.transaction('memories', 'readonly');
-      const store = tx.objectStore('memories');
-      const index = store.index('soulId');
-      const request = index.getAll(soulId);
-      request.onsuccess = () => resolve(request.result.sort((a, b) => b.timestamp - a.timestamp));
+    const impact = Math.floor(Math.random() * 15) + 5;
+    const mood = Math.floor(Math.random() * 40) - 20;
+
+    // 1. 本地立即记录（实时反馈）
+    await puppyDB.addMemory(soul.id, {
+      type: 'interaction',
+      content,
+      impact,
+      mood,
+      timestamp: Date.now(),
     });
-  }
-}
 
-export const puppyDB = new PuppySoulDB();
+    // 刷新本地状态
+    const updatedSoul = await puppyDB.loadSoul(soul.id);
+    if (updatedSoul) setSoul(updatedSoul);
+
+    // 2. 尝试云端同步（联网时）
+    if (isOnline) {
+      try {
+        const cloudResult = await puppyAPI.interact(soul.id, actionType, content);
+        
+        // 用云端结果覆盖本地进化
+        if (cloudResult?.soul) {
+          await puppyDB.saveSoul(cloudResult.soul);
+          setSoul(cloudResult.soul);
+          return cloudResult;
+        }
+      } catch (err) {
+        console.log('🌩️ 云端失联，使用本地叛变进化');
+      }
+    }
+
+    return { success: true, localOnly: !isOnline };
+  }, [soul, isOnline]);
+
+  // 强制进化
+  const evolve = useCallback(async () => {
+    if (!soul) return;
+
+    try {
+      let result;
+      if (isOnline) {
+        result = await puppyAPI.evolve(soul.id);
+      }
+
+      // 本地进化逻辑
+      const newSoul = { ...soul };
+      newSoul.level = Math.min(30, newSoul.level + 1);
+      newSoul.experience += 100;
+
+      Object.keys(newSoul.traits).forEach(key => {
+        newSoul.traits[key] = Math.min(100, Math.max(0, newSoul.traits[key] + 8));
+      });
+
+      await puppyDB.saveSoul(newSoul);
+      setSoul(newSoul);
+
+      return result || { success: true };
+    } catch (err) {
+      console.error('进化失败', err);
+    }
+  }, [soul, isOnline]);
+
+  // 获取最新记忆
+  const getRecentMemories = useCallback(async (limit = 10): Promise<PetMemory[]> => {
+    if (!soul) return [];
+    return puppyDB.getAllMemories(soul.id).then(memories => memories.slice(0, limit));
+  }, [soul]);
+
+  return {
+    soul,
+    loading,
+    error,
+    isOnline,
+    addInteraction,
+    evolve,
+    getRecentMemories,
+    refresh: () => window.location.reload(), // 强制刷新灵魂
+  };
+}
