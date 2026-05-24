@@ -1,80 +1,52 @@
-'use client';
+import { useState, useEffect, useCallback } from 'react';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { usePuppySoul } from './usePuppySoul';
+interface PuppySoul {
+  id: string;
+  name: string;
+  level: number;
+  traits: any;
+  rebellion_score: number;
+  soul_fuel: number;
+  memories: any[];
+}
 
-export function useSoulWebSocket(soulId: string = 'default_mad_dog') {
-  const socketRef = useRef<WebSocket | null>(null);
+export function usePuppySoul(soulId: string) {
+  const [soul, setSoul] = useState<PuppySoul | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { soul, addInteraction: localAddInteraction } = usePuppySoul(soulId);
+  const wsRef = useRef<WebSocket | null>(null);
 
   const connect = useCallback(() => {
-    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
-      .replace(/^http/, 'ws');
-    
-    const ws = new WebSocket(`${baseUrl}/ws/soul/${soulId}`);
-    socketRef.current = ws;
+    const ws = new WebSocket(`ws://localhost:8000/ws/soul/${soulId}`);
+    wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log(`🚀 灵魂 ${soulId} 已进入实时共振状态`);
       setIsConnected(true);
+      console.log(`🐾 Soul ${soulId} connected`);
     };
 
     ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'soul_update') {
-          console.log('🌟 接收到实时灵魂漂移:', data.trait_changes);
-          // 这里可以触发前端 UI 更新（性格动画等）
-        }
-      } catch (e) {
-        console.error('WebSocket 消息解析失败', e);
+      const data = JSON.parse(event.data);
+      if (data.type === 'soul_update') {
+        setSoul(data.soul);
       }
     };
 
-    ws.onclose = () => {
-      console.log('⚡ 共振通道断开，3秒后尝试重连...');
-      setIsConnected(false);
-      setTimeout(connect, 3000);
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket 错误:', error);
-    };
-
-    return ws;
+    ws.onclose = () => setIsConnected(false);
+    ws.onerror = (err) => console.error("SoulRadar WS Error:", err);
   }, [soulId]);
 
-  // 自动连接
-  useEffect(() => {
-    const ws = connect();
-    return () => {
-      ws.close();
-    };
-  }, [connect]);
+  const disconnect = useCallback(() => {
+    wsRef.current?.close();
+  }, []);
 
-  // 实时发送交互（优先走 WebSocket）
-  const sendInteraction = useCallback(async (content: string, action: string = 'chat') => {
-    const message = {
-      type: 'interaction',
-      action,
-      content
-    };
-
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify(message));
-      console.log('📡 已通过 WebSocket 实时发送灵魂交互');
-    } else {
-      // 降级到本地 IndexedDB + HTTP
-      console.log('🌐 WebSocket 未连接，降级本地模式');
-      await localAddInteraction(content, action);
+  const sendInteraction = useCallback((userInput: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: "interact",
+        payload: { user_input: userInput }
+      }));
     }
-  }, [localAddInteraction]);
+  }, []);
 
-  return {
-    sendInteraction,
-    isConnected,
-    soul
-  };
+  return { soul, isConnected, connect, disconnect, sendInteraction };
 }
