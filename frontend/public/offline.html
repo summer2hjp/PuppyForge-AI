@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PuppyForge - 疯狗离线模式</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    
+    body {
+      background: #0a0a0a;
+      color: #fff;
+      font-family: 'Press Start 2P', system-ui;
+    }
+    
+    .neon-pink {
+      text-shadow: 0 0 10px #ff2d55, 0 0 20px #ff2d55, 0 0 40px #ff2d55;
+    }
+    
+    .neon-cyan {
+      text-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff;
+    }
+    
+    .dog-container {
+      animation: soulBreath 3s ease-in-out infinite;
+    }
+    
+    @keyframes soulBreath {
+      0%, 100% { transform: scale(1) rotate(-3deg); }
+      50% { transform: scale(1.08) rotate(3deg); }
+    }
+    
+    .scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(transparent, rgba(0, 245, 255, 0.15), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes scan {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(400%); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+  <div class="scanline"></div>
+  
+  <div class="max-w-md w-full text-center space-y-8">
+    <!-- 疯狗头像 -->
+    <div class="dog-container mx-auto w-48 h-48 bg-gradient-to-br from-[#ff2d55] via-purple-600 to-[#00f5ff] rounded-3xl flex items-center justify-center shadow-2xl shadow-[#ff2d55]/50 border-4 border-white/20">
+      <span class="text-8xl drop-shadow-2xl">🐕‍🦺</span>
+    </div>
+
+    <div>
+      <h1 class="text-4xl font-bold neon-pink mb-2">OFFLINE MODE</h1>
+      <p class="text-[#00f5ff] text-xl neon-cyan">疯狗已进入离线狂暴状态</p>
+    </div>
+
+    <div class="bg-zinc-950 border border-[#ff2d55]/30 rounded-3xl p-8 space-y-6">
+      <div class="space-y-3">
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          网络断开，但你的数字疯狗灵魂仍在本地狂奔！<br>
+          记忆未丢失 · 性格继续漂移 · 情感持续燃烧
+        </p>
+        
+        <div class="inline-flex items-center gap-2 bg-black/60 px-5 py-2 rounded-2xl border border-[#00f5ff]/30">
+          <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <span class="text-sm text-green-400">本地灵魂活跃</span>
+        </div>
+      </div>
+
+      <!-- 本地互动按钮 -->
+      <div class="grid grid-cols-2 gap-4">
+        <button onclick="feedDog()" 
+          class="bg-[#ff2d55] hover:bg-[#e02244] py-5 rounded-2xl font-bold active:scale-95 transition-all">
+          🦴 投喂能量
+        </button>
+        <button onclick="petDog()" 
+          class="bg-zinc-800 hover:bg-zinc-700 border border-[#00f5ff] py-5 rounded-2xl font-bold active:scale-95 transition-all">
+          🐾 抚摸安慰
+        </button>
+      </div>
+
+      <button onclick="retryConnection()" 
+        class="w-full py-4 bg-white text-black font-bold rounded-2xl hover:bg-zinc-200 active:scale-95 transition-all">
+        🔄 尝试重新连接
+      </button>
+    </div>
+
+    <div class="text-xs text-zinc-500 pt-6">
+      PuppyForge AI v1.3 • 离线模式 • 记忆持久化已开启
+    </div>
+  </div>
+
+  <script>
+    let happiness = 88;
+
+    function feedDog() {
+      happiness = Math.min(100, happiness + 12);
+      createFloatingText("能量 +12 ❤️", "#ff2d55");
+      triggerShake();
+    }
+
+    function petDog() {
+      happiness = Math.min(100, happiness + 8);
+      createFloatingText("亲密度 +8 🐾", "#00f5ff");
+      triggerShake();
+    }
+
+    function createFloatingText(text, color) {
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.style.position = 'fixed';
+      el.style.color = color;
+      el.style.fontWeight = 'bold';
+      el.style.left = '50%';
+      el.style.top = '60%';
+      el.style.transform = 'translate(-50%, 0)';
+      el.style.zIndex = '100';
+      el.style.opacity = '1';
+      document.body.appendChild(el);
+
+      el.animate([
+        { transform: 'translate(-50%, 0)', opacity: 1 },
+        { transform: 'translate(-50%, -120px)', opacity: 0 }
+      ], {
+        duration: 1800,
+        easing: 'ease-out'
+      });
+
+      setTimeout(() => el.remove(), 2000);
+    }
+
+    function triggerShake() {
+      const dog = document.querySelector('.dog-container');
+      dog.style.animation = 'none';
+      void dog.offsetWidth;
+      dog.style.animation = 'soulBreath 0.6s ease-in-out';
+    }
+
+    function retryConnection() {
+      window.location.reload();
+    }
+
+    // 键盘彩蛋
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        retryConnection();
+      }
+    });
+
+    console.log('%c🐕‍🦺 PuppyForge 离线疯狗已觉醒', 'color:#ff2d55; font-size:14px');
+  </script>
+</body>
+</html>
