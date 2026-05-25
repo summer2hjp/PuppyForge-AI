@@ -10,7 +10,7 @@ export const InteractionEventSchema = z.object({
 
 export type InteractionEvent = z.infer<typeof InteractionEventSchema>;
 
-export interface SwarmResult {
+export interface BackendSwarmResult {
   event_id: string;
   health_score: number;
   diagnosis: any;
@@ -23,7 +23,7 @@ export interface SwarmResult {
 class SwarmOrchestrator {
   private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-  async run(puppyId: string, event: InteractionEvent): Promise<SwarmResult> {
+  async run(puppyId: string, event: InteractionEvent): Promise<BackendSwarmResult> {
     // 输入验证
     const validatedEvent = InteractionEventSchema.parse(event);
 
@@ -39,7 +39,7 @@ class SwarmOrchestrator {
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const result: SwarmResult = await response.json();
+      const result: BackendSwarmResult = await response.json();
 
       // 前端增强处理
       const enhancedResult = this._enhanceResult(result);
@@ -58,7 +58,7 @@ class SwarmOrchestrator {
     }
   }
 
-  private _enhanceResult(result: SwarmResult): SwarmResult {
+  private _enhanceResult(result: BackendSwarmResult): BackendSwarmResult {
     return {
       ...result,
       health_score: Math.round(result.health_score),
