@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { swarmOrchestrator, InteractionEvent } from '../ai-agents/swarm-orchestrator';
+import { swarmOrchestrator, type InteractionEvent } from '../ai-agents/swarm-orchestrator';
 
 export const VisionAnalysisSchema = z.object({
   puppy_id: z.string().min(1),

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { BackendSwarmResult } from '../ai-agents/swarm-orchestrator';
+import { type BackendSwarmResult } from '../ai-agents/swarm-orchestrator';
 
 interface HealthScoreCardProps {
   puppyId: string;

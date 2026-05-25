@@ -4,7 +4,7 @@
 import { useState, useCallback } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
 import { analyzePetPhoto } from '../lib/vision-analyzer';
-import { VisionAnalysisResult } from '../ai-agents/types';
+import { type VisionAnalysisResult } from '../ai-agents/types';
 
 interface QuickDiagnoseProps {
   onDiagnosisComplete?: (result: VisionAnalysisResult) => void;

@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react';
 import Image from 'next/image';  // ✅ 新增：Next.js 图片优化组件
 import { Upload, AlertTriangle, CheckCircle } from 'lucide-react';
 // ✅ 修复：合并同一模块的导入（解决 no-duplicate-imports）
-import { analyzePetPhoto, VisionAnalysisResult } from '../lib/vision-analyzer';
+import { analyzePetPhoto, type VisionAnalysisResult } from '../lib/vision-analyzer';
 
 interface DiagnosisState {
   image: File | null;

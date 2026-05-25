@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { usePuppyStore } from '../store/usePuppyStore';
 import { personaWS } from '../lib/websocket-client';
 
