@@ -29,6 +29,7 @@ class VisionAnalyzer {
       image_base64: imageData,
       image_url: undefined,
       description: description.trim(),
+      timestamp: new Date().toISOString(), 
     };
 
     // 严格验证
