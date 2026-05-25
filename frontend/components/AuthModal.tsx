@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AuthModalProps {
@@ -13,82 +12,155 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ✅ 解构已修复：显式声明 login/register
   const { login, register, loginWithOAuth } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === 'login') {
-      await login(email, password);
-    } else {
-      await register(email, password);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!email.trim() || !password.trim()) {
+        setError('请填写邮箱和密码');
+        return;
+      }
+      if (password.length < 6) {
+        setError('密码长度不能少于 6 位');
+        return;
+      }
+
+      setLocalLoading(true);
+      setError(null);
+
+      try {
+        if (mode === 'login') {
+          await login(email, password);
+        } else {
+          await register(email, password);
+        }
+        onClose(); // 登录/注册成功后关闭弹窗
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '认证服务暂时不可用');
+      } finally {
+        setLocalLoading(false);
+      }
+    },
+    [mode, email, password, login, register, onClose]
+  );
+
+  // 弹窗关闭或切换模式时重置表单
+  useEffect(() => {
+    if (!isOpen) {
+      setEmail('');
+      setPassword('');
+      setError(null);
+      setLocalLoading(false);
     }
-    onClose();
-  };
+  }, [isOpen, mode]);
 
   if (!isOpen) return null;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100]"
-    >
-      <div className="bg-zinc-900 border border-cyan-500/30 rounded-3xl w-full max-w-md p-10">
-        <h2 className="text-3xl font-bold text-center mb-8">
-          {mode === 'login' ? '连接你的灵魂' : '创造新灵魂'}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 space-y-6">
+        {/* 关闭按钮 */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
+          aria-label="关闭"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 className="text-2xl font-bold text-white text-center">
+          {mode === 'login' ? '🔐 登录 PuppyForge' : '🚀 创建新账号'}
         </h2>
 
-        <div className="flex gap-4 mb-8">
-          <button 
-            onClick={() => loginWithOAuth('google')}
-            className="flex-1 py-3 bg-white text-black rounded-2xl font-medium hover:bg-gray-200"
-          >
-            Google
-          </button>
-          <button 
-            onClick={() => loginWithOAuth('github')}
-            className="flex-1 py-3 bg-black border border-white rounded-2xl font-medium hover:bg-zinc-800"
-          >
-            GitHub
-          </button>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">邮箱</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">密码</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              placeholder="••••••••"
+              required
+              minLength={6}
+            />
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <input
-            type="email"
-            placeholder="邮箱地址"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-black border border-white/20 rounded-2xl px-5 py-4 focus:border-cyan-400 outline-none"
-            required
-          />
-          <input
-            type="password"
-            placeholder="密码"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-black border border-white/20 rounded-2xl px-5 py-4 focus:border-cyan-400 outline-none"
-            required
-          />
+          {error && (
+            <p className="text-red-400 text-sm bg-red-400/10 px-3 py-2 rounded-lg border border-red-400/20">
+              ⚠️ {error}
+            </p>
+          )}
 
           <button
             type="submit"
-            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl font-bold text-lg hover:scale-105 transition-transform"
+            disabled={localLoading}
+            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all active:scale-[0.98]"
           >
-            {mode === 'login' ? '立即连接' : '创建账号'}
+            {localLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                处理中...
+              </span>
+            ) : mode === 'login' ? (
+              '登录'
+            ) : (
+              '注册'
+            )}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-sm text-zinc-400">
-          {mode === 'login' ? "还没有账号？" : "已有账号？"}
-          <span 
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-zinc-700 w-full" />
+          <span className="absolute bg-zinc-900 px-3 text-zinc-500 text-xs">或使用第三方登录</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => loginWithOAuth('google')}
+            className="py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-white text-sm transition-colors"
+          >
+            🌐 Google
+          </button>
+          <button
+            type="button"
+            onClick={() => loginWithOAuth('github')}
+            className="py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-white text-sm transition-colors"
+          >
+            🐙 GitHub
+          </button>
+        </div>
+
+        <p className="text-center text-sm text-zinc-400">
+          {mode === 'login' ? '还没有账号？' : '已有账号？'}
+          <button
+            type="button"
             onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-            className="text-cyan-400 cursor-pointer hover:underline ml-1"
+            className="ml-1 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
           >
             {mode === 'login' ? '立即注册' : '返回登录'}
-          </span>
+          </button>
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }
