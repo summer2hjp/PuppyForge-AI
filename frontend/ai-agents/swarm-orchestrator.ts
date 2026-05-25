@@ -5,7 +5,7 @@ export const InteractionEventSchema = z.object({
   puppy_id: z.string().min(1),
   action: z.string().min(1),
   context: z.string().min(3),
-  visual_features: z.record(z.any()).optional(),
+  visual_features: z.record(z.string(), z.any()).optional(),
 });
 
 export type InteractionEvent = z.infer<typeof InteractionEventSchema>;
