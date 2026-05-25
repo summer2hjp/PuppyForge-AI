@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { SwarmResult } from '../ai-agents/swarm-orchestrator';
+import { BackendSwarmResult } from '../ai-agents/swarm-orchestrator';
 
 interface HealthScoreCardProps {
   puppyId: string;
@@ -22,7 +22,7 @@ export default function HealthScoreCard({ puppyId, className = "" }: HealthScore
 
   // 统一事件监听：Swarm 更新 + WebSocket 实时人格同步
   useEffect(() => {
-    const handleSwarmUpdate = (e: CustomEvent<SwarmResult>) => {
+    const handleSwarmUpdate = (e: CustomEvent<BackendSwarmResult>) => {
       const result = e.detail;
       handlePersonaUpdate(result.health_score, result.persona_impact || {});
     };
