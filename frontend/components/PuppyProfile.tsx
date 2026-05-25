@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SwarmResult } from '../ai-agents/swarm-orchestrator';
+import { BackendSwarmResult } from '../ai-agents/swarm-orchestrator';
 
 interface PuppyProfileProps {
   puppyId: string;
