@@ -22,7 +22,8 @@
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "@next/next/no-img-element": "warn",
     "@next/next/no-html-link-for-pages": "error",
-    "no-duplicate-imports": "error"
+    "no-duplicate-imports": "error",
+    "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports" }]
   },
   "ignorePatterns": [".next/**", "node_modules/**", "public/**", "*.config.js", "out/**"]
 }

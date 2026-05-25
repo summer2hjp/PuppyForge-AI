@@ -3,7 +3,7 @@
 // 小狗长期记忆模块 - 存储和管理成长历史
 // ========================================
 
-import { PuppyMemoryData, DiagnosisResult, PredictionResult, GrowthPlanResult } from '../types';
+import { type PuppyMemoryData, type DiagnosisResult, type PredictionResult, type GrowthPlanResult } from '../types';
 
 export interface MemorySnapshot {
   timestamp: Date;

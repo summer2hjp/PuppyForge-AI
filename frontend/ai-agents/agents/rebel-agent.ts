@@ -3,7 +3,7 @@
 // 叛逆 Agent - 小狗的叛逆人格化身，增加真实情感深度
 // ========================================
 
-import { DiagnosisResult, GrowthPlanResult } from '../types';
+import { type DiagnosisResult, type GrowthPlanResult } from '../types';
 
 export interface RebelContext {
   puppyProfile?: any;

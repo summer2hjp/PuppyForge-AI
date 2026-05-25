@@ -9,11 +9,11 @@ import { GrowthAgent } from '../agents/growth-agent';
 import { RebelAgent } from '../agents/rebel-agent';
 import { PuppyMemory } from '../memory/puppy-long-term-memory';
 import { 
-  SwarmResult, 
-  DiagnosisResult, 
-  PredictionResult, 
-  GrowthPlanResult,
-  PuppyProfile 
+  type SwarmResult, 
+  type DiagnosisResult, 
+  type PredictionResult, 
+  type GrowthPlanResult,
+  type PuppyProfile 
 } from '../types';
 
 export interface SwarmContext {

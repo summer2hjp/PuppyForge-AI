@@ -4,7 +4,7 @@
 // ========================================
 
 import { DIAGNOSIS_PROMPT } from '../prompts/diagnosis.prompt';
-import { PuppySwarmAgent, DiagnosisResult, EmotionVector } from '../types';
+import { type PuppySwarmAgent, type DiagnosisResult, EmotionVector } from '../types';
 
 export interface DiagnosisInput {
   puppyProfile: any;

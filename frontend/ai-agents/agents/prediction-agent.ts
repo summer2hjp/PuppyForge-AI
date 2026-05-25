@@ -4,7 +4,7 @@
 // ========================================
 
 import { PREDICTION_PROMPT } from '../prompts/prediction.prompt';
-import { PuppySwarmAgent, PredictionResult, DiagnosisResult } from '../types';
+import { type PuppySwarmAgent, type PredictionResult, type DiagnosisResult } from '../types';
 
 export interface PredictionInput {
   diagnosis: DiagnosisResult;

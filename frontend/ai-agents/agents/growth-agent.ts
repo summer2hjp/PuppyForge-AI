@@ -4,7 +4,7 @@
 // ========================================
 
 import { GROWTH_PROMPT } from '../prompts/growth.prompt';
-import { PuppySwarmAgent, GrowthPlanResult, DiagnosisResult, PredictionResult } from '../types';
+import { type PuppySwarmAgent, type GrowthPlanResult, type DiagnosisResult, type PredictionResult } from '../types';
 
 export interface GrowthInput {
   diagnosis: DiagnosisResult;
