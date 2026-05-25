@@ -30,7 +30,8 @@ const RadarMesh: React.FC<RadarMeshProps> = ({ traits, rebellion }) => {
       </mesh>
 
       {/* 特质多边形 */}
-      {traitValues.map((value: number, index: number) => {
+      {traitValues.map((value, index) => {
+        const numValue = Number(value); 
         const angle = (index / traitValues.length) * Math.PI * 2;
         const radius = (value / 100) * 8.5;
 
