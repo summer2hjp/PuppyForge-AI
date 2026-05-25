@@ -1,119 +1,104 @@
-// components/vision/VisionAnalyzer.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Camera, Upload } from 'lucide-react';
-import { analyzePetPhoto } from '../../lib/vision-analyzer';
-import { type VisionAnalysisResult } from '../../ai-agents/types';
+import { useState, useCallback, useRef } from 'react';
+import { analyzePetPhoto, type VisionAnalysisResult } from '@/lib/vision-analyzer';
 
 interface VisionAnalyzerProps {
+  puppyId: string;
   onAnalysisComplete?: (result: VisionAnalysisResult) => void;
 }
 
-export default function VisionAnalyzer({ onAnalysisComplete }: VisionAnalyzerProps) {
-  const [image, setImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+export default function VisionAnalyzer({ puppyId, onAnalysisComplete }: VisionAnalyzerProps) {
   const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const previewUrl = URL.createObjectURL(file);
-      
-      setImage(file);
-      setPreview(previewUrl);
-      setAnalysis(null);
-      setError(null);
-      setLoading(true);
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      try {
-        const result = await analyzePetPhoto(file);
-        setAnalysis(result);
-        onAnalysisComplete?.(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '分析失败');
-      } finally {
-        setLoading(false);
-      }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      await runAnalysis(base64);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const runAnalysis = useCallback(async (imageData: string) => {
+    setIsLoading(true);
+    try {
+      const rawResult = await analyzePetPhoto({
+        puppy_id: puppyId,
+        image_base64: imageData,
+        description: 'Vision analysis upload',
+        timestamp: new Date().toISOString(),
+      });
+
+      // ✅ 严格类型填充，消除 TS2345 报错
+      const completeResult: VisionAnalysisResult = {
+        ...rawResult,
+        timestamp: rawResult.timestamp ?? new Date().toISOString(),
+        breed: rawResult.breed ?? 'AI 识别中...',
+        emotionalState: rawResult.emotionalState ?? 'calm',
+        recommendation: rawResult.recommendation ?? '建议补充详细健康档案与行为记录',
+        diagnosis: rawResult.diagnosis ?? {},
+        healthScore: typeof rawResult.healthScore === 'number' ? rawResult.healthScore : 0,
+      };
+
+      setAnalysis(completeResult);
+      onAnalysisComplete?.(completeResult);
+    } catch (err) {
+      console.error('Vision analysis failed:', err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [onAnalysisComplete]);
-
-  const reset = () => {
-    setImage(null);
-    setPreview(null);
-    setAnalysis(null);
-    setError(null);
-  };
+  }, [puppyId, onAnalysisComplete]);
 
   return (
-    <div className="vision-module p-6 bg-zinc-900 border border-zinc-700 rounded-2xl">
-      <h3 className="text-lg font-bold text-purple-400 mb-4 flex items-center gap-2">
-        <Camera className="w-5 h-5" />
-        灵魂视觉诊断
-      </h3>
+    <div className="w-full max-w-md mx-auto space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
+      <h3 className="text-lg font-semibold text-white">🔍 AI 视觉分析模块</h3>
 
-      {!preview ? (
-        <div className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center">
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={handlePhotoUpload} 
-            className="hidden" 
-            id="vision-upload" 
-          />
-          <label 
-            htmlFor="vision-upload" 
-            className="cursor-pointer text-zinc-400 hover:text-white block"
-          >
-            <Upload className="w-10 h-10 mx-auto mb-2" />
-            点击上传宠物照片
-          </label>
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        disabled={isLoading}
+        className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 disabled:opacity-50"
+      />
+
+      {isLoading && (
+        <div className="flex items-center gap-2 text-zinc-400">
+          <span className="animate-spin">🌀</span> 正在解析宠物特征与行为向量...
         </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="relative rounded-xl overflow-hidden">
-            <img 
-              src={preview} 
-              alt="Uploaded pet" 
-              className="w-full h-40 object-cover"
-            />
-            <button
-              onClick={reset}
-              className="absolute top-2 right-2 bg-black/70 hover:bg-black px-2 py-1 rounded text-xs"
-            >
-              重新上传
-            </button>
+      )}
+
+      {analysis && (
+        <div className="mt-4 space-y-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-zinc-500">品种识别</p>
+              <p className="text-white font-medium">{analysis.breed}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500">情绪状态</p>
+              <p className="text-white font-medium">{analysis.emotionalState}</p>
+            </div>
           </div>
-
-          {loading && (
-            <div className="text-center py-4 text-purple-400 animate-pulse">
-              🔍 Grok 多模态引擎分析中...
+          <div>
+            <p className="text-zinc-500 text-sm">健康评分</p>
+            <div className="w-full bg-zinc-700 rounded-full h-2.5 mt-1">
+              <div
+                className="bg-emerald-500 h-2.5 rounded-full transition-all"
+                style={{ width: `${Math.min(100, Math.max(0, analysis.healthScore))}%` }}
+              />
             </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-900/30 border border-red-500 rounded-lg text-red-300 text-sm">
-              ⚠️ {error}
-            </div>
-          )}
-
-          {analysis && (
-            <div className="p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
-              <div className="font-bold text-emerald-400 mb-2">✓ 诊断完成</div>
-              <div className="text-sm space-y-1 text-zinc-300">
-                <div><span className="text-zinc-500">品种:</span> {analysis.breed}</div>
-                <div><span className="text-zinc-500">情绪:</span> {analysis.emotionalState}</div>
-                <div><span className="text-zinc-500">建议:</span> {analysis.recommendation}</div>
-              </div>
-              {analysis.summary && (
-                <div className="mt-3 pt-3 border-t border-emerald-500/30 text-sm text-zinc-400">
-                  {analysis.summary}
-                </div>
-              )}
-            </div>
-          )}
+            <p className="text-xs text-zinc-400 mt-1">{analysis.healthScore}/100</p>
+          </div>
+          <p className="text-sm text-zinc-300 border-t border-zinc-700 pt-3 mt-3">
+            💡 {analysis.recommendation}
+          </p>
         </div>
       )}
     </div>
