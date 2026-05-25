@@ -6,9 +6,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';  // ✅ 新增：Next.js 图片优化组件
 import { Upload, AlertTriangle, CheckCircle } from 'lucide-react';
-import { analyzePetPhoto } from '../lib/vision-analyzer';
-import { VisionAnalysisResult } from '../lib/vision-analyzer';
+// ✅ 修复：合并同一模块的导入（解决 no-duplicate-imports）
+import { analyzePetPhoto, VisionAnalysisResult } from '../lib/vision-analyzer';
 
 interface DiagnosisState {
   image: File | null;
@@ -60,6 +61,9 @@ export default function DiagnosisModule() {
   };
 
   const reset = () => {
+    if (state.preview) {
+      URL.revokeObjectURL(state.preview);  // ✅ 清理内存：避免 Blob URL 泄漏
+    }
     setState({
       image: null,
       preview: null,
@@ -94,16 +98,18 @@ export default function DiagnosisModule() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* 图片预览 */}
-          <div className="relative rounded-2xl overflow-hidden border border-zinc-700">
-            <img 
+          {/* ✅ 图片预览：使用 Next.js Image 组件优化性能 */}
+          <div className="relative rounded-2xl overflow-hidden border border-zinc-700 h-64">
+            <Image 
               src={state.preview} 
               alt="Uploaded pet" 
-              className="w-full h-64 object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
             <button
               onClick={reset}
-              className="absolute top-4 right-4 bg-black/70 hover:bg-black px-3 py-1 rounded-lg text-sm"
+              className="absolute top-4 right-4 bg-black/70 hover:bg-black px-3 py-1 rounded-lg text-sm z-10 transition"
             >
               重新上传
             </button>
@@ -144,33 +150,4 @@ export default function DiagnosisModule() {
               </h3>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-zinc-900 rounded-xl">
-                  <div className="text-zinc-400 text-sm">品种</div>
-                  <div className="text-white font-bold">{state.analysis.breed}</div>
-                </div>
-                <div className="p-4 bg-zinc-900 rounded-xl">
-                  <div className="text-zinc-400 text-sm">情绪状态</div>
-                  <div className="text-white font-bold">{state.analysis.emotionalState}</div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-zinc-900 rounded-xl">
-                <div className="text-zinc-400 text-sm mb-2">建议</div>
-                <div className="text-white">{state.analysis.recommendation}</div>
-              </div>
-
-              {state.analysis.summary && (
-                <div className="p-4 bg-zinc-900 rounded-xl">
-                  <div className="text-zinc-400 text-sm mb-2">详细分析</div>
-                  <div className="text-zinc-300 text-sm whitespace-pre-line">
-                    {state.analysis.summary}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+                <div className="p-4 bg-zinc-900
