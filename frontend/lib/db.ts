@@ -1,8 +1,15 @@
-import type { User } from '@/types/auth';
-import { hashPassword } from './auth';
+import type { User } from '@/type/auth';
+import { hashPassword, verifyPassword } from './auth';
 
 // ⚠️ 内存 Mock 存储：生产环境请替换为数据库查询
-const userStore = new Map<string, { passwordHash: string } & User>();
+type UserRecord = { passwordHash: string } & User;
+type UserStoreGlobal = typeof globalThis & { __puppyforgeUserStore?: Map<string, UserRecord> };
+const userStoreGlobal = globalThis as UserStoreGlobal;
+const userStore = userStoreGlobal.__puppyforgeUserStore ?? new Map<string, UserRecord>();
+
+if (!userStoreGlobal.__puppyforgeUserStore) {
+  userStoreGlobal.__puppyforgeUserStore = userStore;
+}
 
 export async function findUserByEmail(email: string): Promise<User | null> {
   for (const [, userData] of userStore) {
