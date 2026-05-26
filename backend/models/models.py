@@ -9,7 +9,6 @@ from sqlmodel import SQLModel, Field, Relationship, Column, JSON
 if TYPE_CHECKING:
     from .auth import User
 
-# 根据你的实际项目结构调整导入路径
 try:
     from backend.config import settings
 except ImportError:
@@ -26,19 +25,6 @@ class PetTraits(BaseModel):
     intelligence: float = PydanticField(70.0, ge=0, le=100)
     rebellion: float = PydanticField(30.0, ge=0, le=100)
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "loyalty": 65.0,
-                "chaos": 85.0,
-                "curiosity": 92.0,
-                "aggression": 48.0,
-                "affection": 78.0,
-                "intelligence": 70.0,
-                "rebellion": 30.0,
-            }
-        }
-
 
 class PetMemory(SQLModel, table=True):
     """宠物记忆模型"""
@@ -46,17 +32,17 @@ class PetMemory(SQLModel, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
     soul_id: str = Field(foreign_key="puppy_souls.id", index=True)
-    memory_type: str = Field(default="interaction")  # interaction, training, evolution, etc.
+    memory_type: str = Field(default="interaction")
     content: str
-    emotional_impact: float = Field(default=0.0)  # -1.0 到 1.0
+    emotional_impact: float = Field(default=0.0)
     importance: int = Field(default=1, ge=1, le=10)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # 记忆元数据（可选）
-    metadata: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
+    # ✅ 重命名：metadata → extra_data
+    extra_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
     
-    # 关系
-    soul: PuppySoul = Relationship(back_populates="memories")
+    # 关系 - 使用字符串前向引用
+    soul: "PuppySoul" = Relationship(back_populates="memories")
 
 
 class EvolutionStage(SQLModel, table=True):
@@ -82,7 +68,7 @@ class PuppySoul(SQLModel, table=True):
     last_active: datetime = Field(default_factory=datetime.utcnow)
     total_interactions: int = Field(default=0, ge=0)
     evolution_stage: str = Field(default="puppy")
-    soul_fuel: float = Field(default=settings.DEFAULT_SOUL_FUEL if hasattr(settings, 'DEFAULT_SOUL_FUEL') else 100.0)
+    soul_fuel: float = Field(default=100.0)
     rebellion_score: float = Field(default=0.0, ge=0.0)
     
     # 外键关系
@@ -90,7 +76,7 @@ class PuppySoul(SQLModel, table=True):
     owner: Optional["User"] = Relationship(back_populates="souls")
     
     # 一对多关系
-    memories: List[PetMemory] = Relationship(
+    memories: List["PetMemory"] = Relationship(
         back_populates="soul",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
@@ -101,14 +87,8 @@ class PuppySoul(SQLModel, table=True):
         sa_column=Column(JSON)
     )
 
-    # === 方法 ===
-    
     def apply_drift(self, changes: Dict[str, float]):
-        """应用性格漂移
-        
-        Args:
-            changes: 字典，键为特征名，值为变化量
-        """
+        """应用性格漂移"""
         for trait, delta in changes.items():
             if hasattr(self.traits, trait):
                 current = getattr(self.traits, trait)
@@ -116,18 +96,13 @@ class PuppySoul(SQLModel, table=True):
                 setattr(self.traits, trait, new_value)
     
     def get_traits_dict(self) -> Dict[str, float]:
-        """获取特征字典（用于 API 响应）"""
+        """获取特征字典"""
         return self.traits.model_dump()
     
     def update_traits(self, **kwargs):
-        """批量更新特征值
-        
-        Example:
-            puppy.update_traits(loyalty=80.0, chaos=50.0)
-        """
+        """批量更新特征值"""
         current = self.traits.model_dump()
         current.update(kwargs)
-        # 验证值在 0-100 范围内
         for key, value in current.items():
             current[key] = max(0.0, min(100.0, value))
         self.traits = PetTraits(**current)
@@ -139,7 +114,7 @@ class PuppySoul(SQLModel, table=True):
     
     def _check_level_up(self):
         """检查是否升级"""
-        exp_needed = self.level * 100  # 简单升级公式
+        exp_needed = self.level * 100
         while self.experience >= exp_needed:
             self.experience -= exp_needed
             self.level += 1
@@ -154,7 +129,7 @@ class PuppySoul(SQLModel, table=True):
     
     @property
     def is_active(self) -> bool:
-        """判断宠物是否活跃（24小时内有互动）"""
+        """判断宠物是否活跃"""
         if self.last_active:
             delta = datetime.utcnow() - self.last_active
             return delta.days < 1
@@ -165,21 +140,6 @@ class PuppySoul(SQLModel, table=True):
         """获取最显著的性格特征"""
         traits_dict = self.get_traits_dict()
         return max(traits_dict, key=traits_dict.get)
-    
-    class Config:
-        arbitrary_types_allowed = True  # 允许 PetTraits 作为自定义类型
-        json_schema_extra = {
-            "example": {
-                "name": "Buddy",
-                "level": 1,
-                "evolution_stage": "puppy",
-                "traits": {
-                    "loyalty": 65.0,
-                    "chaos": 85.0,
-                    "curiosity": 92.0,
-                }
-            }
-        }
 
 
 # === API 模型 ===
@@ -203,23 +163,6 @@ class PuppySoulRead(BaseModel):
     last_active: datetime
     traits: Dict[str, float]
     owner_id: Optional[str] = None
-    
-    @classmethod
-    def from_orm(cls, puppy: PuppySoul):
-        """从 ORM 模型创建响应"""
-        return cls(
-            id=puppy.id,
-            name=puppy.name,
-            level=puppy.level,
-            experience=puppy.experience,
-            evolution_stage=puppy.evolution_stage,
-            soul_fuel=puppy.soul_fuel,
-            rebellion_score=puppy.rebellion_score,
-            total_interactions=puppy.total_interactions,
-            last_active=puppy.last_active,
-            traits=puppy.get_traits_dict(),
-            owner_id=puppy.owner_id,
-        )
 
 
 class PuppySoulUpdate(BaseModel):
@@ -231,14 +174,3 @@ class PuppySoulUpdate(BaseModel):
 class TraitDriftRequest(BaseModel):
     """性格漂移请求"""
     changes: Dict[str, float]
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "changes": {
-                    "loyalty": 5.0,
-                    "chaos": -10.0,
-                    "curiosity": 2.0
-                }
-            }
-        }
