@@ -38,14 +38,3 @@ opentelemetry-instrumentation-fastapi>=0.47.0
 opentelemetry-instrumentation-redis>=0.47.0
 opentelemetry-exporter-otlp>=1.26.0
 prometheus-client>=0.20.0
-
-# 🔧 Auto-added missing dependencies
-pillow
-base_agent
-python-jose[cryptography]==3.3.0
-jwt
-langgraph
-passlib[bcrypt]
-pipeline
-tenacity
-wasmtime
