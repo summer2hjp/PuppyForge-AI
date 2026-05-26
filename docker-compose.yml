@@ -33,7 +33,7 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '1.0'
+          cpus: '2.0'
 
   # ==================== ⚡ Redis ====================
   redis:
@@ -61,7 +61,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
 
   # ==================== 🔙 Backend (FastAPI) ====================
   backend:
@@ -96,7 +96,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1.5'
+          cpus: '2.0'
 
   # ==================== 🎨 Frontend (Next.js) ====================
   frontend:
@@ -127,8 +127,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
-          cpus: '1.0'
+          memory: 1024M
+          cpus: '2.0'
 
   # ==================== 🔄 (可选) 反向代理/网关 ====================
   # 生产环境建议启用 Traefik 或 Nginx 统一入口、TLS 与路由
