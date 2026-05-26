@@ -87,7 +87,7 @@ jobs:
           --health-retries 3
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # ✅ 获取完整历史用于增量检查
 
@@ -170,7 +170,7 @@ jobs:
           - node-version: ${{ env.NODE_VERSION }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -225,7 +225,7 @@ jobs:
     needs: [backend-test]  # 可独立运行
     if: github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/init@v4
@@ -260,7 +260,7 @@ jobs:
         component: [backend, frontend]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -330,7 +330,7 @@ jobs:
       url: ${{ vars.DEPLOY_URL || 'https://app.puppyforge.ai' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Deploy to ${{ github.event.inputs.environment || 'staging' }}
         run: |
