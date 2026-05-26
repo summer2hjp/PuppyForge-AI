@@ -1,10 +1,11 @@
+// ✅ 修复后完整代码
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import PWAInitializer from '@/components/PWAInitializer'; // 后续可新增
+import PWAInitializer from '@/components/PWAInitializer';
 
-const inter = Inter({ 
-  subsets: ['latin'], 
+const inter = Inter({
+  subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter'
 });
@@ -29,43 +30,34 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // 激进移动端沉浸感
+  userScalable: false,
 };
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="zh-CN" className={`${inter.variable} dark`}>
-      <head>
+    <html lang="zh-CN">
+      <body className={`${inter.variable} font-sans antialiased`}>
         {/* PWA 核心激进注入 */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#ff2d55" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+        <PWAInitializer />
         
         {/* iOS 沉浸式状态栏 */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         
         {/* 防止地址栏遮挡 */}
-        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         
         {/* 自定义 PWA 启动动画颜色 */}
-        <meta name="msapplication-TileColor" content="#ff2d55" />
-      </head>
-      <body className="bg-black text-white antialiased min-h-screen">
+        <meta name="theme-color" content="#ff2d55" />
+        
         {/* 全局宠物灵魂层 */}
-        <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(at_50%_30%,rgba(255,45,85,0.08),transparent)]" />
-        
-        {children}
-        
-        {/* PWA 初始化组件 */}
-        <PWAInitializer />
+        <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-purple-900 to-zinc-900">
+          {children}
+        </div>
       </body>
     </html>
   );
