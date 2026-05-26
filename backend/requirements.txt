@@ -18,6 +18,9 @@ qdrant-client>=1.12.0,<2.0.0
 litellm>=1.55.0,<2.0.0
 openai>=1.50.0
 
+# 🛡️ Rate Limiting
+slowapi==0.1.9
+
 # 🔗 HTTP Client (litellm 依赖，显式声明更稳)
 httpx>=0.27.0,<0.28.0
 
