@@ -8,6 +8,7 @@ from config import settings
 
 
 class PetTraits(BaseModel):
+    """宠物性格特征模型"""
     loyalty: float = PydanticField(65.0, ge=0, le=100)
     chaos: float = PydanticField(85.0, ge=0, le=100)
     curiosity: float = PydanticField(92.0, ge=0, le=100)
@@ -18,6 +19,7 @@ class PetTraits(BaseModel):
 
 
 class PetMemory(SQLModel, table=True):
+    """宠物记忆表"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     soul_id: str = Field(foreign_key="puppysoul.id")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -26,9 +28,11 @@ class PetMemory(SQLModel, table=True):
     impact: float = 0.8
     mood_delta: float = 5.0
     source_agent: str = "unknown"
+    soul: Optional["PuppySoul"] = Relationship(back_populates="memories")
 
 
 class PuppySoul(SQLModel, table=True):
+    """宠物灵魂核心表"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     level: int = Field(default=1)
@@ -39,15 +43,12 @@ class PuppySoul(SQLModel, table=True):
     soul_fuel: float = Field(default=settings.DEFAULT_SOUL_FUEL)
     rebellion_score: float = Field(default=0.0)
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
-
-    # 关系
     owner: Optional["User"] = Relationship(back_populates="souls")
     memories: List[PetMemory] = Relationship(back_populates="soul")
-
-    # Pydantic 模型用于 API
     traits: PetTraits = PydanticField(default_factory=PetTraits)
 
     def apply_drift(self, changes: Dict[str, float]):
+        """应用性格漂移"""
         for trait, delta in changes.items():
             if hasattr(self.traits, trait):
                 current = getattr(self.traits, trait)
@@ -58,9 +59,26 @@ class PuppySoul(SQLModel, table=True):
         self.soul_fuel = max(10.0, self.soul_fuel - settings.SOUL_FUEL_DECAY_RATE * 10)
 
 
+class SoulEvent(BaseModel):
+    """灵魂事件记录"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    soul_id: str
+    event_type: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    data: Dict[str, Any] = PydanticField(default_factory=dict)
+
+
 class InteractionResult(BaseModel):
+    """交互结果返回模型"""
     soul: PuppySoul
     response: str
     trait_changes: Dict[str, float]
-    agent_insights: Dict[str, Any] = {}
+    agent_insights: Dict[str, Any] = PydanticField(default_factory=dict)
     memory_injected: bool = True
+
+
+class ErrorResponse(BaseModel):
+    """统一错误响应"""
+    message: str
+    detail: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
