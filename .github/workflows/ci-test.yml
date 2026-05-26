@@ -63,6 +63,7 @@ jobs:
           pip install pytest pytest-asyncio httpx pytest-mock pytest-cov
 
       - name: 运行pytest单元测试
+        working-directory: ./backend
         run: |
           pytest tests/ -v --cov=. --cov-report=xml
 
