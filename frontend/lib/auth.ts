@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
-import type { AuthPayload } from '@/types/auth';
+import type { AuthPayload } from '@/type/auth';
 
 const ACCESS_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-access-secret-change-me');
 const REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-me');
