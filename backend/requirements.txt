@@ -1,7 +1,7 @@
 # ========================================
 # Forge API - Core Dependencies (CPU Mode)
 # ========================================
-
+sqlmodel>=0.0.14,<1.0.0
 sqlalchemy==2.0.36
 psycopg2-binary==2.9.12
 asyncpg==0.31.0
