@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import base64
 import io
@@ -89,7 +89,7 @@ diagnosis_service = SoulDiagnosisService()
 
 
 # FastAPI 路由
-router = FastAPI(prefix="/vision", tags=["vision"])
+router = APIRouter(prefix="/vision", tags=["vision"])
 
 @router.post("/diagnose")
 async def diagnose(
