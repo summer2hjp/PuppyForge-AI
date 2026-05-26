@@ -19,7 +19,7 @@ litellm==1.55.0
 openai>=1.50.0
 
 # 🔗 HTTP Client (litellm 依赖，显式声明更稳)
-httpx==0.28.1
+httpx==0.28.0
 
 # 🔧 Utilities
 python-dotenv==1.2.2
