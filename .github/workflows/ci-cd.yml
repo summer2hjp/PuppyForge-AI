@@ -1,27 +1,79 @@
+# .github/workflows/ci-cd.yml
 name: PuppyForge-AI CI/CD
 
+# ==================== 触发条件优化 ====================
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'backend/**'
       - 'frontend/**'
       - 'docker-compose.yml'
       - 'requirements.txt'
       - 'package.json'
+      - '.github/workflows/ci-cd.yml'  # ✅ 工作流自身变更也触发
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'backend/**'
       - 'frontend/**'
+  workflow_dispatch:  # ✅ 支持手动触发
+    inputs:
+      environment:
+        description: 'Deploy environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (emergency only)'
+        required: false
+        default: false
+        type: boolean
+
+# ==================== 全局配置 ====================
+env:
+  REGISTRY: docker.io
+  BACKEND_IMAGE: summer2hjp/puppyforge-backend
+  FRONTEND_IMAGE: summer2hjp/puppyforge-frontend
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
+# ✅ 权限最小化原则
+permissions:
+  contents: read
+  packages: write
+  actions: read
+  security-events: write  # 用于 CodeQL
 
 jobs:
+  # ==================== 前置检查 ====================
+  validate-secrets:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Validate required secrets
+        run: |
+          required_secrets=("DOCKERHUB_USERNAME" "DOCKERHUB_TOKEN")
+          for secret in "${required_secrets[@]}"; do
+            if [ -z "${!secret}" ]; then
+              echo "❌ Missing required secret: $secret"
+              exit 1
+            fi
+          done
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   # ==================== 后端测试 & Lint ====================
   backend-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # ✅ 添加超时保护
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine  # ✅ 使用轻量镜像
         env:
           POSTGRES_DB: test_puppyforge
           POSTGRES_USER: test
@@ -30,79 +82,187 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 3
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ✅ 获取完整历史用于增量检查
 
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
-      - name: Install Backend Dependencies
+      - name: Install dependencies
         working-directory: ./backend
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio black isort mypy
+          pip install pytest pytest-asyncio pytest-cov black isort mypy pylint
 
-      - name: Lint (Black + isort)
+      - name: Lint - Black format check
         working-directory: ./backend
-        run: |
-          black --check .
-          isort --check-only .
+        run: black --check --diff .
 
-      - name: Type Check (mypy)
+      - name: Lint - isort import check
         working-directory: ./backend
-        run: mypy .
+        run: isort --check-only --diff .
 
-      - name: Run Tests
+      - name: Lint - Pylint static analysis
+        working-directory: ./backend
+        run: pylint $(git ls-files '*.py') || true  # ✅ 警告不阻断流程
+
+      - name: Type Check - mypy
+        working-directory: ./backend
+        run: mypy . --install-types --non-interactive
+
+      - name: Security Scan - Bandit
+        working-directory: ./backend
+        run: bandit -r . -f json -o bandit-report.json || true
+
+      - name: Run tests with coverage
         working-directory: ./backend
         env:
           DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test_puppyforge
-          SECRET_KEY: 123456
+          SECRET_KEY: ${{ secrets.TEST_SECRET_KEY || 'fallback-test-key' }}  # ✅ 安全回退
           LLM_MODEL: gpt-4o-mini
-        run: pytest -v --asyncio-mode=auto
+          ENVIRONMENT: test
+        run: |
+          pytest -v \
+            --asyncio-mode=auto \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junitxml=pytest-report.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: |
+            backend/pytest-report.xml
+            backend/bandit-report.json
+          retention-days: 7
 
   # ==================== 前端测试 & Build ====================
   frontend-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        # ✅ 多浏览器测试（可选扩展）
+        # browser: [chrome, firefox]
+        include:
+          - node-version: ${{ env.NODE_VERSION }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Frontend Dependencies
+      - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit
 
-      - name: Lint & Type Check
+      - name: Lint - ESLint
+        working-directory: ./frontend
+        run: npm run lint -- --max-warnings=0
+
+      - name: Type Check - TypeScript
+        working-directory: ./frontend
+        run: npm run type-check
+
+      - name: Security Audit - npm audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate || echo "⚠️ Audit warnings found"
+
+      - name: Unit Tests
+        working-directory: ./frontend
+        run: npm run test:ci -- --coverage
+
+      - name: Build Next.js (Production)
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:8000' }}
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Verify build output
         working-directory: ./frontend
         run: |
-          npm run lint
-          npm run type-check
+          test -d .next/static && echo "✅ Build artifacts exist"
+          test -f .next/package.json && echo "✅ Next.js config valid"
 
-      - name: Build Next.js
-        working-directory: ./frontend
-        run: npm run build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next
+          retention-days: 1
+
+  # ==================== 安全扫描 (并行执行) ====================
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [backend-test]  # 可独立运行
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python,javascript"
+
+      - name: Dependency Check - backend
+        uses: pyupio/safety-action@v1
+        with:
+          args: -r backend/requirements.txt --json --output safety-report.json
+
+      - name: Dependency Check - frontend
+        working-directory: frontend
+        run: npm audit --json > npm-audit-report.json || true
 
   # ==================== Docker Build & Push ====================
   docker-build:
-    needs: [backend-test, frontend-build]
+    needs: [backend-test, frontend-build, validate-secrets]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment != '')
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -113,26 +273,120 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & Push Backend
-        uses: docker/build-push-action@v5
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          context: .
-          file: ./backend/Dockerfile
-          push: true
+          images: ${{ env.REGISTRY }}/${{ env[format('{0}_IMAGE', matrix.component | upper)] }}
           tags: |
-            summer2hjp/puppyforge-backend:latest
-            summer2hjp/puppyforge-backend:${{ github.sha }}
-          cache-from: type=registry,ref=summer2hjp/puppyforge-backend:buildcache
-          cache-to: type=inline
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=sha,prefix=,format=long
+            type=semver,pattern={{version}},value=1.0.0
+            type=raw,value=${{ github.event.inputs.environment }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
-      - name: Build & Push Frontend
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./frontend/Dockerfile
+          file: ./${{ matrix.component }}/Dockerfile
           push: true
-          tags: |
-            summer2hjp/puppyforge-frontend:latest
-            summer2hjp/puppyforge-frontend:${{ github.sha }}
-          cache-from: type=registry,ref=summer2hjp/puppyforge-frontend:buildcache
-          cache-to: type=inline
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # ✅ 启用多层缓存加速构建
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env[format('{0}_IMAGE', matrix.component | upper)] }}:buildcache
+            type=gha
+          cache-to: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env[format('{0}_IMAGE', matrix.component | upper)] }}:buildcache,mode=max
+            type=gha,mode=max
+          # ✅ 多平台构建（可选）
+          # platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            COMMIT_SHA=${{ github.sha }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env[format('{0}_IMAGE', matrix.component | upper)] }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.component }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results-${{ matrix.component }}.sarif'
+
+  # ==================== 部署到环境 ====================
+  deploy:
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+      url: ${{ vars.DEPLOY_URL || 'https://app.puppyforge.ai' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to ${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          echo "🚀 Deploying ${{ env.BACKEND_IMAGE }}:${{ github.sha }} to ${{ github.event.inputs.environment || 'staging' }}"
+          # ✅ 实际部署命令示例 (根据实际基础设施调整)
+          # kubectl set image deployment/puppyforge-backend \
+          #   puppyforge-backend=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          # 
+          # kubectl rollout status deployment/puppyforge-backend --timeout=300s
+          # 
+          # if [ $? -eq 0 ]; then
+          #   echo "✅ Deployment successful"
+          # else
+          #   echo "❌ Deployment failed, initiating rollback"
+          #   kubectl rollout undo deployment/puppyforge-backend
+          #   exit 1
+          # fi
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
+      - name: Post-deployment health check
+        run: |
+          # ✅ 健康检查示例
+          for i in {1..30}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://app.puppyforge.ai/health)
+            if [ "$response" -eq 200 ]; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "⏳ Waiting for service... ($i/30)"
+            sleep 10
+          done
+          echo "❌ Health check failed after 5 minutes"
+          exit 1
+
+      - name: Notify deployment result
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true  # 通知失败不影响流程
+
+  # ==================== 清理旧镜像 (可选) ====================
+  cleanup:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Delete old images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: puppyforge-backend
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
