@@ -1,11 +1,28 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
+// 🆕 添加诊断结果类型定义
+export interface DiagnosisResult {
+  coreIssues: string[];
+  risks: string[];
+  confidence: number;
+  timestamp?: string;
+  [key: string]: unknown; // 允许扩展字段
+}
+
 export interface PersonaState {
   trust: number;
   neuroticism: number;
   energy: number;
   attachment: number;
+}
+
+export interface RebelSuggestion {
+  suggestion: string;
+  risk_level: number;
+  rebel_factor: number;
+  reasoning: string;
+  timestamp: string;
 }
 
 export interface PuppyForgeState {
@@ -18,24 +35,18 @@ export interface PuppyForgeState {
   persona: PersonaState;
 
   // 诊断与记忆
-  lastDiagnosis: any | null;
+  lastDiagnosis: DiagnosisResult | null; 
   memoriesCount: number;
 
   // Rebel 系统
-  rebelSuggestions: Array<{
-    suggestion: string;
-    risk_level: number;
-    rebel_factor: number;
-    reasoning: string;
-    timestamp: string;
-  }>;
+  rebelSuggestions: RebelSuggestion[];
   isRebelling: boolean;
 
   // Actions
   updateHealthScore: (score: number) => void;
   updatePersona: (partial: Partial<PersonaState>) => void;
-  setLastDiagnosis: (diagnosis: any) => void;
-  addRebelSuggestion: (suggestion: any) => void;
+  setLastDiagnosis: (diagnosis: DiagnosisResult | null) => void; 
+  addRebelSuggestion: (suggestion: RebelSuggestion) => void; 
   incrementMemories: () => void;
   setRebelling: (value: boolean) => void;
   resetAll: () => void;
@@ -65,15 +76,15 @@ export const usePuppyStore = create<PuppyForgeState>()(
             healthScore: Math.max(20, Math.min(100, Math.round(score))),
           })),
 
-        updatePersona: (partial: Partial<PersonaState>) =>
+        updatePersona: (partial: Partial<PersonaState>) => 
           set((state) => ({
             persona: { ...state.persona, ...partial },
           })),
 
-        setLastDiagnosis: (diagnosis: any) =>
+        setLastDiagnosis: (diagnosis: DiagnosisResult | null) =>
           set({ lastDiagnosis: diagnosis }),
 
-        addRebelSuggestion: (suggestion: any) =>
+        addRebelSuggestion: (suggestion: RebelSuggestion) => 
           set((state) => ({
             rebelSuggestions: [
               { ...suggestion, timestamp: new Date().toISOString() },
