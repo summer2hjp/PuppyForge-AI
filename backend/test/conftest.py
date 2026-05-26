@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from backend.main import app
+from main import app
 from backend.database import Base, engine, SessionLocal
 
 @pytest.fixture(scope="function")
