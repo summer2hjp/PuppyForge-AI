@@ -1,0 +1,15 @@
+﻿分类,.env 变量名,GitHub 名称,类型,作用域,说明
+🔐 核心认证,SECRET_KEY,SECRET_KEY,🔒 Secret,全局,JWT/Session 加密密钥（至少 32 位）
+🗄️ 数据库,POSTGRES_PASSWORD,DB_PASSWORD,🔒 Secret,全局,PostgreSQL 管理员密码
+🗄️ 数据库,POSTGRES_USER,DB_USER,📦 Variable,全局,默认 puppy_admin
+⚡ 缓存,REDIS_PASSWORD,REDIS_PASSWORD,🔒 Secret,全局,Redis 访问密码
+🤖 LLM,OPENAI_API_KEY,OPENAI_API_KEY,🔒 Secret,全局,OpenAI 密钥（按需启用）
+🤖 LLM,ANTHROPIC_API_KEY,ANTHROPIC_API_KEY,🔒 Secret,全局,Anthropic 密钥（按需启用）
+🐳 镜像仓库,-,DOCKERHUB_USERNAME,🔒 Secret,全局,Docker Hub 用户名
+🐳 镜像仓库,-,DOCKERHUB_TOKEN,🔒 Secret,全局,Docker Hub Access Token
+🔙 后端配置,LLM_PROVIDER,LLM_PROVIDER,📦 Variable,全局,openai / anthropic / ollama
+🔙 后端配置,LLM_MODEL,LLM_MODEL,📦 Variable,全局,gpt-4o-mini / claude-3-haiku 等
+🎨 前端配置,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_API_URL,📦 Variable,全局,生产环境后端地址
+📊 观测性,SENTRY_DSN,SENTRY_DSN,🔒 Secret,全局,Sentry 错误追踪 DSN
+🚀 部署,-,KUBE_CONFIG_DATA,🔒 Secret,全局,Base64 编码的 kubeconfig
+🚀 部署,-,DEPLOY_URL,📦 Variable,环境,部署后健康检查 URL
