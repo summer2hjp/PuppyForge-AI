@@ -1,15 +1,21 @@
-from .auth import User, UserCreate, UserRead, Token
+# models/__init__.py
+from .auth import User, UserRole, UserCreate, UserRead, Token, TokenData
 from .models import (
-    PuppySoul, 
-    PetTraits, 
-    PetMemory, 
-    SoulEvent, 
-    InteractionResult, 
-    ErrorResponse
+    PetTraits,
+    PetMemory,
+    EvolutionStage,
+    PuppySoul,
+    PuppySoulCreate,
+    PuppySoulRead,
+    PuppySoulUpdate,
+    TraitDriftRequest,
 )
 
 __all__ = [
-    "User", "UserCreate", "UserRead", "Token",
-    "PuppySoul", "PetTraits", "PetMemory", 
-    "SoulEvent", "InteractionResult", "ErrorResponse"
+    # Auth
+    "User", "UserRole", "UserCreate", "UserRead", "Token", "TokenData",
+    # Models
+    "PetTraits", "PetMemory", "EvolutionStage",
+    "PuppySoul", "PuppySoulCreate", "PuppySoulRead", "PuppySoulUpdate",
+    "TraitDriftRequest",
 ]
