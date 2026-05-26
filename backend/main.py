@@ -9,6 +9,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlmodel import select
+from jose import JWTError, jwt
 
 from config import settings
 from auth import router as auth_router, get_current_user
@@ -112,7 +113,7 @@ async def interact(
         return result
     except Exception as e:
         logger.error(f"Interaction failed for soul {soul_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"交互失败：{str(e)}")
+        raise HTTPException(status_code=500, detail="交互失败，请稍后重试")
 
 
 @app.get("/api/soul/{soul_id}")
@@ -150,15 +151,48 @@ async def evolve_soul(
 
 
 # ==================== WebSocket ====================
+async def get_websocket_user(websocket: WebSocket, db: Session) -> User | None:
+    token = websocket.query_params.get("token")
+    if not token:
+        auth_header = websocket.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+    except JWTError:
+        return None
+
+    user = db.exec(select(User).where(User.id == user_id)).first()
+    if user is None or not user.is_active:
+        return None
+    return user
+
+
 @app.websocket("/ws/soul/{soul_id}")
 async def soul_websocket(
     websocket: WebSocket,
     soul_id: str,
-    orch: SoulOrchestrator = Depends(get_orchestrator)
+    orch: SoulOrchestrator = Depends(get_orchestrator),
+    db: Session = Depends(get_db)
 ):
     """灵魂实时通信通道"""
+    current_user = await get_websocket_user(websocket, db)
+    if current_user is None:
+        await websocket.close(code=1008, reason="未认证")
+        return
+
+    if not await verify_soul_ownership(soul_id, current_user.id, db):
+        await websocket.close(code=1008, reason="权限不足")
+        return
+
     await websocket.accept()
-    logger.info(f"🔗 Soul {soul_id} WebSocket 已连接")
+    logger.info(f"🔗 Soul {soul_id} WebSocket 已连接 | user={current_user.id}")
     
     try:
         while True:
@@ -172,11 +206,21 @@ async def soul_websocket(
 @app.websocket("/ws/persona/{puppy_id}")
 async def persona_websocket(
     websocket: WebSocket,
-    puppy_id: str
+    puppy_id: str,
+    db: Session = Depends(get_db)
 ):
     """人格式实时通信通道（前端 personaWS 使用）"""
+    current_user = await get_websocket_user(websocket, db)
+    if current_user is None:
+        await websocket.close(code=1008, reason="未认证")
+        return
+
+    if not await verify_soul_ownership(puppy_id, current_user.id, db):
+        await websocket.close(code=1008, reason="权限不足")
+        return
+
     await websocket.accept()
-    logger.info(f"🎭 Persona {puppy_id} WebSocket 已连接")
+    logger.info(f"🎭 Persona {puppy_id} WebSocket 已连接 | user={current_user.id}")
     
     try:
         while True:

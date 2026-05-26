@@ -1,8 +1,10 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel, Field as PydanticField
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import uuid
+
+from config import settings
 
 
 class PetTraits(BaseModel):
@@ -26,6 +28,7 @@ class PetMemory(SQLModel, table=True):
     impact: float = 0.8
     mood_delta: float = 5.0
     source_agent: str = "unknown"
+    soul: Optional["PuppySoul"] = Relationship(back_populates="memories")
 
 
 class PuppySoul(SQLModel, table=True):
@@ -37,20 +40,23 @@ class PuppySoul(SQLModel, table=True):
     last_active: datetime = Field(default_factory=datetime.utcnow)
     total_interactions: int = Field(default=0)
     evolution_stage: str = Field(default="puppy")
-    soul_fuel: float = Field(default=100.0)
+    soul_fuel: float = Field(default=settings.DEFAULT_SOUL_FUEL)
     rebellion_score: float = Field(default=0.0)
     owner_id: Optional[str] = Field(default=None, foreign_key="user.id")
+    owner: Optional["User"] = Relationship(back_populates="souls")
+    memories: List[PetMemory] = Relationship(back_populates="soul")
+    traits: PetTraits = PydanticField(default_factory=PetTraits)
 
     def apply_drift(self, changes: Dict[str, float]):
         """应用性格漂移"""
         for trait, delta in changes.items():
-            if hasattr(self, trait):
-                current = getattr(self, trait)
+            if hasattr(self.traits, trait):
+                current = getattr(self.traits, trait)
                 new_val = max(0, min(100, current + delta))
-                setattr(self, trait, new_val)
+                setattr(self.traits, trait, new_val)
         
         self.experience += int(sum(abs(d) for d in changes.values()))
-        self.soul_fuel = max(10.0, self.soul_fuel - 0.08 * 10)
+        self.soul_fuel = max(10.0, self.soul_fuel - settings.SOUL_FUEL_DECAY_RATE * 10)
 
 
 class SoulEvent(BaseModel):
@@ -59,7 +65,7 @@ class SoulEvent(BaseModel):
     soul_id: str
     event_type: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    data: Dict[str, Any] = {}
+    data: Dict[str, Any] = PydanticField(default_factory=dict)
 
 
 class InteractionResult(BaseModel):
@@ -67,7 +73,7 @@ class InteractionResult(BaseModel):
     soul: PuppySoul
     response: str
     trait_changes: Dict[str, float]
-    agent_insights: Dict[str, Any] = {}
+    agent_insights: Dict[str, Any] = PydanticField(default_factory=dict)
     memory_injected: bool = True
 
 

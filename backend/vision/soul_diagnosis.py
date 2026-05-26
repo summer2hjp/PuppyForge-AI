@@ -1,9 +1,11 @@
-from fastapi import APIRouter, FastAPI, UploadFile, File, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 import base64
+import binascii
 import io
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from typing import Optional
+from config import settings
 
 # 假设的 VLM 服务客户端（需实现）
 # from your_vlm_client import AsyncVLMClient
@@ -33,9 +35,19 @@ class SoulDiagnosisService:
             诊断结果包含健康分数、问题识别、建议等
         """
         try:
-            # 解码图片
-            image_data = base64.b64decode(image_base64)
+            # 解码并校验大小
+            image_data = base64.b64decode(image_base64, validate=True)
+            max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+            if len(image_data) > max_size_bytes:
+                raise HTTPException(status_code=413, detail="图片体积超限")
+
+            # 校验图片有效性和类型
             image = Image.open(io.BytesIO(image_data))
+            image.verify()
+            image = Image.open(io.BytesIO(image_data))
+            mime_type = Image.MIME.get(image.format)
+            if mime_type not in settings.ALLOWED_IMAGE_TYPES:
+                raise HTTPException(status_code=400, detail="不支持的图片类型")
             
             # 构建诊断 prompt
             prompt = f"""
@@ -77,6 +89,12 @@ class SoulDiagnosisService:
                 "summary": "宠物整体健康状况良好，毛色光亮，眼神有神。注意到轻微皮肤干燥，建议使用保湿护理产品。"
             }
             
+        except (binascii.Error, ValueError):
+            raise HTTPException(status_code=400, detail="无效的 base64 图片数据")
+        except (UnidentifiedImageError, OSError):
+            raise HTTPException(status_code=400, detail="无效的图片文件")
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -91,12 +109,15 @@ diagnosis_service = SoulDiagnosisService()
 # FastAPI 路由
 router = APIRouter(prefix="/vision", tags=["vision"])
 
-@router.post("/diagnose")
-async def diagnose(
-    soul_id: str,
-    image: str,  # Base64 图片
+
+class DiagnoseRequest(BaseModel):
+    soul_id: str
+    image: str
     description: Optional[str] = None
-):
+
+
+@router.post("/diagnose")
+async def diagnose(payload: DiagnoseRequest):
     """
     视觉诊断接口
     前端调用示例：
@@ -112,5 +133,5 @@ async def diagnose(
     })
     ```
     """
-    result = await diagnosis_service.diagnose_image(soul_id, image, description)
+    result = await diagnosis_service.diagnose_image(payload.soul_id, payload.image, payload.description)
     return result

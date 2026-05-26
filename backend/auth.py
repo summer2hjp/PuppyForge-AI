@@ -12,7 +12,7 @@ from database import get_db
 from sqlmodel import Session, select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -68,6 +68,9 @@ def require_role(required_role: UserRole):
 @router.post("/login")
 async def login(form_data: UserCreate, db: Session = Depends(get_db)):
     """用户登录（邮箱密码）"""
+    if not form_data.password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
+
     user = db.exec(select(User).where(User.email == form_data.email)).first()
     
     if not user or not user.hashed_password:
@@ -96,6 +99,9 @@ async def login(form_data: UserCreate, db: Session = Depends(get_db)):
 @router.post("/register")
 async def register(form_data: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
+    if not form_data.password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
+
     # 检查邮箱是否已存在
     existing_user = db.exec(select(User).where(User.email == form_data.email)).first()
     if existing_user:
