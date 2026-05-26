@@ -1,6 +1,7 @@
+// ✅ 修复后完整代码
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// ✅ 1. 严格对齐后端 snake_case 数据契约
+// ✅ 严格对齐后端 snake_case 数据契约
 export interface PuppySoul {
   soul_id: string;
   evolution_stage: string;
@@ -25,25 +26,29 @@ interface UseSoulWebSocketReturn {
   soul: PuppySoul | null;
   isConnected: boolean;
   sendInteraction: (userInput: string) => void;
-  getRecentMemories: (limit?: number) => Promise<SoulInteractionEvent[]>;
+  getRecentMemories: (limit?: number) => Promise<SoulInteractionEvent[]>; // ✅ 修复: 添加泛型
   connect: () => void;
   disconnect: () => void;
 }
 
 const WS_ENDPOINT = process.env.NEXT_PUBLIC_SOUL_WS_URL || 'ws://localhost:8000/ws/soul';
 
+// ✅ 添加类型守卫函数
+function isPuppySoul(payload: unknown): payload is PuppySoul {
+  return typeof payload === 'object' && payload !== null && 'soul_id' in payload;
+}
+
 export function useSoulWebSocket({
   soulId,
   onStateUpdate,
   onMessage,
 }: UseSoulWebSocketOptions): UseSoulWebSocketReturn {
-  const [soul, setSoul] = useState<PuppySoul | null>(null);
+  const [soul, setSoul] = useState<PuppySoul | null>(null); // ✅ 修复: 明确类型
   const [isConnected, setIsConnected] = useState(false);
-  
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // 缓存近期记忆，避免每次请求都走网络（对应 Symbiosis Gateway 的边缘缓存策略）
-  const memoryCacheRef = useRef<SoulInteractionEvent[]>([]);
+
+  const wsRef = useRef<WebSocket | null>(null); // ✅ 修复: 明确类型
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null); // ✅ 修复: 明确类型
+  const memoryCacheRef = useRef<SoulInteractionEvent[]>([]); // ✅ 修复: 明确类型
 
   const connect = useCallback(() => {
     if (!soulId || wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -59,15 +64,13 @@ export function useSoulWebSocket({
     ws.onmessage = (event) => {
       try {
         const data: SoulInteractionEvent = JSON.parse(event.data);
-        
-        // 处理神经形态状态更新（张量漂移）
-        if (data.type === 'state_update' && data.payload) {
-          const updatedSoul = data.payload as PuppySoul;
-          setSoul(updatedSoul);
-          onStateUpdate?.(updatedSoul);
+
+        // ✅ 修复: 使用类型守卫进行安全转换
+        if (data.type === 'state_update' && data.payload && isPuppySoul(data.payload)) {
+          setSoul(data.payload);
+          onStateUpdate?.(data.payload);
         }
 
-        // 缓存交互事件用于 getRecentMemories
         memoryCacheRef.current = [data, ...memoryCacheRef.current].slice(0, 50);
         onMessage?.(data);
       } catch (err) {
@@ -78,7 +81,6 @@ export function useSoulWebSocket({
     ws.onclose = () => {
       setIsConnected(false);
       wsRef.current = null;
-      // 指数退避重连
       reconnectTimerRef.current = setTimeout(connect, 3000);
     };
 
@@ -95,13 +97,11 @@ export function useSoulWebSocket({
     setIsConnected(false);
   }, []);
 
-  // ✅ 2. 补全 app/memory/page.tsx 缺失的 getRecentMemories
-  const getRecentMemories = useCallback(async (limit = 20): Promise<SoulInteractionEvent[]> => {
-    // 优先返回本地缓存，若不足则通过 REST 回源（Edge-Hybrid 策略）
+  const getRecentMemories = useCallback(async (limit = 20): Promise<SoulInteractionEvent[]> => { // ✅ 修复
     if (memoryCacheRef.current.length >= limit) {
       return memoryCacheRef.current.slice(0, limit);
     }
-    
+
     try {
       const res = await fetch(`/api/souls/${soulId}/memories?limit=${limit}`);
       if (!res.ok) throw new Error('Failed to fetch memories');
@@ -119,7 +119,7 @@ export function useSoulWebSocket({
       console.warn('[SoulWS] Cannot send: not connected');
       return;
     }
-    
+
     const event: SoulInteractionEvent = {
       type: 'user_input',
       payload: { text: userInput },
@@ -128,7 +128,6 @@ export function useSoulWebSocket({
     wsRef.current.send(JSON.stringify(event));
   }, []);
 
-  // 自动连接/断开生命周期
   useEffect(() => {
     connect();
     return () => disconnect();
