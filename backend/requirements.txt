@@ -12,14 +12,14 @@ uvicorn[standard]==0.32.1
 
 # 🗄️ Data & Cache
 redis==5.2.1
-qdrant-client==1.12.1
+qdrant-client>=1.12.0,<2.0.0
 
 # 🤖 LLM Router (CPU-compatible)
-litellm==1.55.0
+litellm>=1.55.0,<2.0.0
 openai>=1.50.0
 
 # 🔗 HTTP Client (litellm 依赖，显式声明更稳)
-httpx==0.28.0
+httpx>=0.27.0,<0.28.0
 
 # 🔧 Utilities
 python-dotenv==1.2.2
