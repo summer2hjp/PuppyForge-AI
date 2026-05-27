@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   frontend-test:
-    name: Frontend Jest 测试
+    name: Frontend TypeScript Check
     runs-on: ubuntu-latest
     
     defaults:
@@ -27,10 +30,24 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: 安装Frontend依赖
-        run: npm ci
+        # 兼容当前锁文件中的 React Three 依赖组合
+        run: npm ci --legacy-peer-deps
+
+      - name: 运行TypeScript检查
+        run: npm run type-check
 
       - name: 运行Jest单元测试
-        run: npm test -- --coverage
+        run: >
+          npx --yes
+          -p jest
+          -p ts-jest
+          -p jest-environment-jsdom
+          -p @types/jest
+          -p @testing-library/react
+          -p @testing-library/jest-dom
+          -p @testing-library/user-event
+          -p identity-obj-proxy
+          jest --config __tests__/utils/jest.config.ts --coverage
 
       - name: 上传覆盖率报告
         uses: actions/upload-artifact@v4
