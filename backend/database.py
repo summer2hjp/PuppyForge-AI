@@ -27,6 +27,10 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False
 )
 
+# 兼容测试和旧代码的同步会话/基类导出
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = SQLModel
+
 # ==================== Qdrant ====================
 from qdrant_client import QdrantClient
 
@@ -39,7 +43,7 @@ qdrant_client = QdrantClient(
 
 def get_db():
     """同步会话生成器（兼容当前代码）"""
-    db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+    db = SessionLocal()
     try:
         yield db
     finally:

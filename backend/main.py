@@ -72,11 +72,18 @@ async def verify_soul_ownership(soul_id: str, user_id: str, db: Session) -> bool
 # ==================== 路由 ====================
 # 添加 API 前缀以匹配前端调用
 app.include_router(auth_router, prefix="/api")
+app.include_router(auth_router)
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 
 @app.get("/")
 @limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
-async def root():
+async def root(request: Request):
+    _ = request
     return {
         "status": "running",
         "project": settings.PROJECT_NAME,
@@ -93,6 +100,7 @@ app.include_router(vision_router, prefix="/api")
 @app.post("/api/interact/{soul_id}", response_model=InteractionResult)
 @limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def interact(
+    request: Request,
     soul_id: str,
     payload: dict,
     current_user: User = Depends(get_current_user),
@@ -100,6 +108,7 @@ async def interact(
     db: Session = Depends(get_db)
 ):
     """与灵魂交互的核心接口"""
+    _ = request
     if not await verify_soul_ownership(soul_id, current_user.id, db):
         raise HTTPException(status_code=403, detail="权限不足：您不是该灵魂的主人")
     
@@ -119,11 +128,13 @@ async def interact(
 @app.get("/api/soul/{soul_id}")
 @limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def get_soul(
+    request: Request,
     soul_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """获取灵魂状态"""
+    _ = request
     if not await verify_soul_ownership(soul_id, current_user.id, db):
         raise HTTPException(status_code=403, detail="权限不足")
     
@@ -137,17 +148,22 @@ async def get_soul(
 @app.post("/api/evolve/{soul_id}")
 @limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
 async def evolve_soul(
+    request: Request,
     soul_id: str,
     current_user: User = Depends(get_current_user),
     orch: SoulOrchestrator = Depends(get_orchestrator),
     db: Session = Depends(get_db)
 ):
     """灵魂进化"""
+    _ = request
     if not await verify_soul_ownership(soul_id, current_user.id, db):
         raise HTTPException(status_code=403, detail="权限不足")
     
     # TODO: 实现进化逻辑
-    return {"message": f"灵魂 {soul_id} 进化中...", "status": "processing"}
+    return {
+        "message": f"灵魂 {soul_id} 进化中...",
+        "status": "processing"
+    }
 
 
 # ==================== WebSocket ====================
