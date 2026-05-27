@@ -29,6 +29,8 @@ python-dotenv==1.2.2
 pydantic==2.10.3
 pydantic-settings==2.6.1
 numpy>=1.26.0
+pytest
+pytest-cov
 
 # 🩺 Health & Monitoring (optional but recommended)
 prometheus-fastapi-instrumentator==7.0.0
