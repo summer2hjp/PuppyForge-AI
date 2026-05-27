@@ -1,8 +1,5 @@
-// ========================================
-// 认证工具库 - JWT & 密码哈希
-// ========================================
 import bcrypt from 'bcryptjs';
-import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export interface AuthPayload {
   userId: string;
@@ -10,9 +7,14 @@ export interface AuthPayload {
   role: 'user' | 'moderator' | 'admin' | 'superadmin';
 }
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'fallback-dev-secret-do-not-use-in-production'
-);
+type TokenType = 'access' | 'refresh';
+
+type SignedPayload = AuthPayload & {
+  typ: TokenType;
+  exp: number;
+};
+
+const TOKEN_SECRET = process.env.JWT_SECRET || 'fallback-dev-secret-do-not-use-in-production';
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
@@ -23,61 +25,83 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function signToken(payload: AuthPayload): Promise<string> {
-  // ✅ 修复 TS2352：展开 payload 满足 jose 的 Record<string, unknown> 要求
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('24h')
-    .sign(JWT_SECRET);
+  return signTypedToken(payload, 'access', 24 * 60 * 60 * 1000);
 }
 
-// ✅ 新增：兼容 API 路由的导出别名
+export async function signRefreshToken(payload: AuthPayload): Promise<string> {
+  return signTypedToken(payload, 'refresh', 7 * 24 * 60 * 60 * 1000);
+}
+
 export const generateTokens = signToken;
 
 export async function verifyToken(token: string): Promise<AuthPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+  const decoded = decodeAndVerify(token);
+  if (!decoded) return null;
 
-    if (
-      typeof payload.userId === 'string' &&
-      typeof payload.email === 'string' &&
-      ['user', 'moderator', 'admin', 'superadmin'].includes(payload.role as string)
-    ) {
-      return {
-        userId: payload.userId,
-        email: payload.email,
-        role: payload.role as AuthPayload['role'],
-      };
+  const { userId, email, role, exp } = decoded;
+  if (Date.now() > exp) return null;
+  if (!['user', 'moderator', 'admin', 'superadmin'].includes(role)) return null;
+
+  return { userId, email, role };
+}
+
+export async function refreshAccessToken(refreshToken: string): Promise<{ token: string } | null> {
+  const decoded = decodeAndVerify(refreshToken);
+  if (!decoded) return null;
+  if (Date.now() > decoded.exp) return null;
+  if (decoded.typ !== 'refresh') return null;
+
+  const token = await signToken({
+    userId: decoded.userId,
+    email: decoded.email,
+    role: decoded.role,
+  });
+  return { token };
+}
+
+export function parseTokenSafely(token: string): AuthPayload | null {
+  const decoded = decodeAndVerify(token);
+  if (!decoded) return null;
+  if (Date.now() > decoded.exp) return null;
+  return {
+    userId: decoded.userId,
+    email: decoded.email,
+    role: decoded.role,
+  };
+}
+
+async function signTypedToken(payload: AuthPayload, typ: TokenType, ttlMs: number): Promise<string> {
+  const signedPayload: SignedPayload = {
+    ...payload,
+    typ,
+    exp: Date.now() + ttlMs,
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(signedPayload), 'utf8').toString('base64url');
+  const signature = createSignature(encodedPayload);
+  return `pf.${encodedPayload}.${signature}`;
+}
+
+function decodeAndVerify(token: string): SignedPayload | null {
+  const [prefix, encodedPayload, signature] = token.split('.');
+  if (prefix !== 'pf' || !encodedPayload || !signature) return null;
+
+  const expected = createSignature(encodedPayload);
+  const actualBuffer = Buffer.from(signature, 'hex');
+  const expectedBuffer = Buffer.from(expected, 'hex');
+  if (actualBuffer.length !== expectedBuffer.length) return null;
+  if (!timingSafeEqual(actualBuffer, expectedBuffer)) return null;
+
+  try {
+    const decoded = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as SignedPayload;
+    if (!decoded.userId || !decoded.email || !decoded.role || !decoded.typ || !decoded.exp) {
+      return null;
     }
-    return null;
+    return decoded;
   } catch {
     return null;
   }
 }
 
-export function parseTokenSafely(token: string): AuthPayload | null {
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    const payload = JSON.parse(jsonPayload);
-
-    if (
-      typeof payload.userId === 'string' &&
-      typeof payload.email === 'string' &&
-      ['user', 'moderator', 'admin', 'superadmin'].includes(payload.role)
-    ) {
-      return payload as AuthPayload;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+function createSignature(encodedPayload: string): string {
+  return createHmac('sha256', TOKEN_SECRET).update(encodedPayload).digest('hex');
 }

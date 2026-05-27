@@ -19,12 +19,19 @@ const customConfig = {
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
   
   testMatch: [
-    '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)',
+  ],
+  testPathIgnorePatterns: [
+    '<rootDir>/__tests__/e2e/',
+    '<rootDir>/__tests__/integration/',
+    '<rootDir>/components/ui/test.tsx',
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(jose)/)',
+  ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',

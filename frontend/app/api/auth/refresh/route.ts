@@ -1,6 +1,4 @@
-// app/api/auth/login/route.ts
-import { generateTokens, signRefreshToken } from '@/lib/auth';
-import { verifyUserPassword } from '@/lib/db';
+import { refreshAccessToken } from '@/lib/auth';
 
 async function readRequestBody(request: Request): Promise<Record<string, unknown> | null> {
   const maybeRequest = request as {
@@ -40,36 +38,19 @@ export async function POST(request: Request) {
       return jsonResponse({ message: '请求体格式错误' }, 400);
     }
 
-    const email = typeof body.email === 'string' ? body.email : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-
-    if (!email || !password) {
-      return jsonResponse({ message: '邮箱和密码不能为空' }, 400);
+    const refreshToken = typeof body.refreshToken === 'string' ? body.refreshToken : '';
+    if (!refreshToken) {
+      return jsonResponse({ message: '缺少 refresh token' }, 400);
     }
 
-    const user = await verifyUserPassword(email, password);
-    if (!user) {
-      return jsonResponse({ message: '邮箱或密码错误' }, 401);
+    const result = await refreshAccessToken(refreshToken);
+    if (!result) {
+      return jsonResponse({ message: 'Refresh token 无效或已过期' }, 401);
     }
 
-    const generated = await generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: user.role ?? 'user',
-    });
-
-    const tokenPayload =
-      typeof generated === 'string'
-        ? { token: generated, refreshToken: await signRefreshToken({ userId: user.id, email: user.email, role: user.role ?? 'user' }) }
-        : generated;
-
-    return jsonResponse({
-      user,
-      token: tokenPayload.token,
-      refreshToken: tokenPayload.refreshToken,
-    });
+    return jsonResponse(result, 200);
   } catch (error) {
-    console.error('[LOGIN_ERROR]', error);
-    return jsonResponse({ message: '登录失败' }, 500);
+    console.error('[REFRESH_ERROR]', error);
+    return jsonResponse({ message: '刷新失败' }, 500);
   }
 }
