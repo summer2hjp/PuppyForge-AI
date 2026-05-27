@@ -5,15 +5,11 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope;
 
-import { registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
-import { ExpirationPlugin } from 'workbox-expiration';
-
+// 缓存配置
 const CACHE_NAME = 'puppyforge-v1';
 const STATIC_ASSETS = ['/', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
-// ✅ 修复 TS2304：Next.js SW 上下文不直接暴露 InstallEvent/ActivateEvent
-// 使用 Event + ExtendableEvent 断言，100% 兼容 TypeScript 严格模式
+// ✅ Install: 预缓存静态资源
 self.addEventListener('install', (event: Event) => {
   (event as ExtendableEvent).waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -21,6 +17,7 @@ self.addEventListener('install', (event: Event) => {
   self.skipWaiting();
 });
 
+// ✅ Activate: 清理旧缓存
 self.addEventListener('activate', (event: Event) => {
   (event as ExtendableEvent).waitUntil(
     caches.keys().then((keys) =>
@@ -30,27 +27,53 @@ self.addEventListener('activate', (event: Event) => {
   self.clients.claim();
 });
 
-// 🌐 路由策略
-registerRoute(
-  ({ request }: { request: Request }) => request.destination === 'image',
-  new CacheFirst({
-    cacheName: 'images-cache',
-    plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 })],
-  })
-);
+// ✅ Fetch: 原生实现 Workbox 路由策略
+self.addEventListener('fetch', (event: Event) => {
+  const e = event as FetchEvent;
+  const { request } = e;
 
-registerRoute(
-  ({ request }: { request: Request }) => request.mode === 'navigate',
-  new NetworkFirst({ cacheName: 'pages-cache', networkTimeoutSeconds: 10 })
-);
+  // 1. 图片：Cache First (原 workbox CacheFirst)
+  if (request.destination === 'image') {
+    e.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open('images-cache').then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
-registerRoute(
-  ({ request }: { request: Request }) =>
-    request.destination === 'script' || request.destination === 'style',
-  new StaleWhileRevalidate({ cacheName: 'static-resources' })
-);
+  // 2. 页面导航：Network First (原 workbox NetworkFirst)
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).catch(() => caches.match('/'))
+    );
+    return;
+  }
 
-// 🔔 Push 通知
+  // 3. 脚本/样式：Stale While Revalidate (原 workbox StaleWhileRevalidate)
+  if (request.destination === 'script' || request.destination === 'style') {
+    e.respondWith(
+      caches.open('static-resources').then((cache) =>
+        cache.match(request).then((cached) => {
+          const fetchPromise = fetch(request).then((networkResponse) => {
+            cache.put(request, networkResponse.clone());
+            return networkResponse;
+          });
+          return cached || fetchPromise;
+        })
+      )
+    );
+  }
+});
+
+// ✅ Push: 推送通知
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
   const data = event.data.json();
@@ -65,13 +88,15 @@ self.addEventListener('push', (event: PushEvent) => {
   );
 });
 
-// 🔄 Background Sync
-// ✅ 修复 TS2304/TS2339：使用 ServiceWorkerGlobalScopeEventMap 安全获取 tag/waitUntil
+// ✅ Sync: 后台同步 (彻底修复 TS2339)
+interface BackgroundSyncEvent extends ExtendableEvent {
+  tag: string;
+  lastChance: boolean;
+}
+
 self.addEventListener('sync', (event: Event) => {
-  const syncEvent = event as ServiceWorkerGlobalScopeEventMap['sync'];
+  const syncEvent = event as BackgroundSyncEvent;
   if (syncEvent.tag === 'sync-pet-data') {
-    syncEvent.waitUntil(
-      Promise.resolve(console.log('[SW] Background sync triggered for pet data'))
-    );
+    syncEvent.waitUntil(Promise.resolve(console.log('[SW] Background sync triggered for pet data')));
   }
 });
