@@ -3,86 +3,56 @@
 // ========================================
 
 /// <reference lib="webworker" />
-
-declare const self: ServiceWorkerGlobalScope;  // ✅ 关键：声明 self 类型
+declare const self: ServiceWorkerGlobalScope;
 
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
-// 缓存配置
 const CACHE_NAME = 'puppyforge-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-];
+const STATIC_ASSETS = ['/', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
-// ✅ 修复：使用 self.skipWaiting() 正确类型
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (event: InstallEvent) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  // ✅ 修复：skipWaiting 在 ServiceWorkerGlobalScope 中存在
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event: ActivateEvent) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+    )
   );
-  // ✅ 修复：clients 在 ServiceWorkerGlobalScope 中存在
   self.clients.claim();
-  console.log('[SW] Activated');
 });
 
-// 路由策略
+// ✅ 修复 TS7031：显式声明 request 类型
 registerRoute(
-  ({ request }) => request.destination === 'image',
+  ({ request }: { request: Request }) => request.destination === 'image',
   new CacheFirst({
     cacheName: 'images-cache',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 天
-      }),
-    ],
+    plugins: [new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 })],
   })
 );
 
 registerRoute(
-  ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({
-    cacheName: 'pages-cache',
-    networkTimeoutSeconds: 10,
-  })
+  ({ request }: { request: Request }) => request.mode === 'navigate',
+  new NetworkFirst({ cacheName: 'pages-cache', networkTimeoutSeconds: 10 })
 );
 
 registerRoute(
-  ({ request }) => 
-    request.destination === 'script' || 
-    request.destination === 'style',
-  new StaleWhileRevalidate({
-    cacheName: 'static-resources',
-  })
+  ({ request }: { request: Request }) =>
+    request.destination === 'script' || request.destination === 'style',
+  new StaleWhileRevalidate({ cacheName: 'static-resources' })
 );
 
-// ✅ 修复：showNotification 在 ServiceWorkerGlobalScope 中存在
-self.addEventListener('push', (event) => {
+// ✅ 修复 TS2339：使用 PushEvent 类型
+self.addEventListener('push', (event: PushEvent) => {
   if (event.data) {
     const data = event.data.json();
     event.waitUntil(
-      // ✅ 修复：registration 在 ServiceWorkerGlobalScope 中存在
       self.registration.showNotification('🐕‍🦺 PuppyForge', {
         body: data.body || '你有新的消息',
         icon: '/icons/icon-192.png',
@@ -94,12 +64,11 @@ self.addEventListener('push', (event) => {
   }
 });
 
-// 后台同步
-self.addEventListener('sync', (event) => {
+// ✅ 修复 TS2339：使用 SyncEvent 类型
+self.addEventListener('sync', (event: SyncEvent) => {
   if (event.tag === 'sync-pet-data') {
     event.waitUntil(
-      // 执行数据同步逻辑
-      console.log('[SW] Syncing pet data...')
+      console.log('[SW] Background sync triggered')
     );
   }
 });
