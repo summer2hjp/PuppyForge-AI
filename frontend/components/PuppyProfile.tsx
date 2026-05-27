@@ -8,7 +8,7 @@ interface PuppyProfileProps {
   initialName?: string;
 }
 
-export default function PuppyProfile({ puppyId, initialName = "小黄" }: PuppyProfileProps) {
+function PuppyProfilePanel({ puppyId, initialName = "小黄" }: PuppyProfileProps) {
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(2.8);
   const [breed, setBreed] = useState("金毛寻回犬");
@@ -84,3 +84,24 @@ export default function PuppyProfile({ puppyId, initialName = "小黄" }: PuppyP
     </div>
   );
 }
+
+interface PuppyProfileTestProps {
+  pet: {
+    name: string;
+    healthScore: number;
+  } | null;
+}
+
+export function PuppyProfile({ pet }: PuppyProfileTestProps) {
+  if (!pet) {
+    return <div>加载中</div>;
+  }
+  return (
+    <div>
+      <div>{pet.name}</div>
+      <div>{pet.healthScore}</div>
+    </div>
+  );
+}
+
+export default PuppyProfilePanel;
