@@ -1,4 +1,4 @@
-name: 🔥 PuppyForge-AI 全栈 CI 轰炸机
+name: 🔥 PuppyForge-AI 全栈 CI 核弹
 
 on:
   push:
@@ -22,8 +22,6 @@ jobs:
     steps:
       - name: 📥 Checkout 代码
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: ⚡ Setup Node.js 20
         uses: actions/setup-node@v4
@@ -32,16 +30,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 📦 安装前端依赖
+      - name: 📦 安装依赖
         run: npm ci --legacy-peer-deps
 
-      - name: 🔍 TypeScript 类型检查
+      - name: 🔍 TypeScript 检查
         run: npm run type-check
 
-      - name: 🧪 Jest 测试 + Coverage
+      - name: 🧪 Jest 狂测 + Coverage
         run: npm run test:ci
 
-      - name: 📊 上传 Frontend Coverage
+      - name: 📊 上传 Coverage
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
@@ -53,7 +51,6 @@ jobs:
         with:
           directory: frontend/coverage
           flags: frontend
-          fail_ci_if_error: false
 
   backend-test:
     name: 🐍 Backend pytest 核弹
@@ -64,35 +61,19 @@ jobs:
         working-directory: backend
 
     steps:
-      - name: 📥 Checkout 代码
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: ⚡ Setup Python 3.11
+      - name: ⚡ Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
 
-      - name: 📦 安装后端依赖（强制加测试包）
+      - name: 📦 安装依赖 + 测试包
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      - name: 🧪 运行 pytest + Coverage
-        run: |
-          pytest --cov=. --cov-report=xml --cov-report=term-missing -q --maxfail=5
-
-      - name: 📊 上传 Backend Coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: backend/coverage.xml
-          retention-days: 14
-
-      - name: 📈 Codecov Backend
-        uses: codecov/codecov-action@v4
-        with:
-          directory: backend
-          flags: backend
-          fail_ci_if_error: false
+      - name: 🧪 pytest 狂轰
+        run: pytest --cov=. --cov-report=xml --cov-report=term-missing -q
