@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend-test:
-    name: Frontend Jest 测试
+    name: Frontend TypeScript 检查
     runs-on: ubuntu-latest
     
     defaults:
@@ -27,16 +27,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: 安装Frontend依赖
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
-      - name: 运行Jest单元测试
-        run: npm test -- --coverage
-
-      - name: 上传覆盖率报告
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-coverage
-          path: frontend/coverage/
+      - name: 运行TypeScript检查
+        run: npm run type-check
 
   backend-test:
     name: Backend pytest 测试

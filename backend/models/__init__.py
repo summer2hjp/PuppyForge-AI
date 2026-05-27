@@ -8,6 +8,9 @@ from .models import (
     PuppySoulCreate,
     PuppySoulRead,
     PuppySoulUpdate,
+    SoulEvent,
+    InteractionResult,
+    ErrorResponse,
     TraitDriftRequest,
 )
 
@@ -17,5 +20,6 @@ __all__ = [
     # Models
     "PetTraits", "PetMemory", "EvolutionStage",
     "PuppySoul", "PuppySoulCreate", "PuppySoulRead", "PuppySoulUpdate",
+    "SoulEvent", "InteractionResult", "ErrorResponse",
     "TraitDriftRequest",
 ]
