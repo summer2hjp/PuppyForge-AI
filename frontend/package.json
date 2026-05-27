@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "jest --config __tests__/utils/jest.config.mts",
-    "test:ci": "jest --config __tests__/utils/jest.config.mts --coverage --ci --maxWorkers=2 --passWithNoTests --detectOpenHandles",
-    "test:watch": "jest --config __tests__/utils/jest.config.mts --watch"
+    "test": "jest --config __tests__/utils/jest.config.js",
+    "test:ci": "jest --config __tests__/utils/jest.config.js --coverage --ci --maxWorkers=2 --passWithNoTests --detectOpenHandles",
+    "test:watch": "jest --config __tests__/utils/jest.config.js --watch"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -33,6 +33,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/dom-navigation": "^1.0.7",
     "@types/node": "^20.14.0",
@@ -45,6 +46,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.24",
     "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.4.1",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
