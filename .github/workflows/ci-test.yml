@@ -1,4 +1,4 @@
-name: PuppyForge-AI CI 测试流水线
+name: 🔥 PuppyForge-AI CI 测试流水线
 
 on:
   push:
@@ -8,10 +8,11 @@ on:
 
 permissions:
   contents: read
+  checks: write      # 让测试报告更漂亮
 
 jobs:
   frontend-test:
-    name: Frontend TypeScript Check
+    name: 🚀 Frontend Jest + Coverage
     runs-on: ubuntu-latest
     
     defaults:
@@ -19,80 +20,52 @@ jobs:
         working-directory: frontend
 
     steps:
-      - name: Checkout 代码
+      - name: 📥 Checkout 代码
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: ⚡ Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 安装Frontend依赖
-        # 兼容当前锁文件中的 React Three 依赖组合
+      - name: 📦 安装依赖
         run: npm ci --legacy-peer-deps
 
-      - name: 运行TypeScript检查
+      - name: 🔍 TypeScript 类型检查
         run: npm run type-check
 
-      - name: 运行Jest单元测试
-        run: >
-          npx --yes
-          -p jest
-          -p ts-jest
-          -p jest-environment-jsdom
-          -p @types/jest
-          -p @testing-library/react
-          -p @testing-library/jest-dom
-          -p @testing-library/user-event
-          -p identity-obj-proxy
-          jest --config __tests__/utils/jest.config.ts --coverage
+      - name: 🧪 运行 Jest 测试 + Coverage（正式版）
+        run: npm run test:ci || npm test -- --coverage --ci --maxWorkers=2
 
-      - name: 上传覆盖率报告
+      - name: 📊 上传 Coverage 报告
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: frontend/coverage/
+          retention-days: 14
+
+      - name: 📈 Codecov 覆盖率（推荐）
+        uses: codecov/codecov-action@v4
+        with:
+          directory: frontend/coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   backend-test:
-    name: Backend pytest 测试
+    name: 🐍 Backend pytest
     runs-on: ubuntu-latest
-    
     defaults:
       run:
         working-directory: backend
-
     steps:
-      - name: Checkout 代码
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-
-      - name: 安装Backend依赖
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx pytest-mock pytest-cov
-
-      - name: 运行pytest单元测试
-        working-directory: ./backend
-        run: |
-          pytest tests/ -v --cov=. --cov-report=xml
-
-      - name: 上传覆盖率报告
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: backend/coverage.xml
-
-  # 可选：合并覆盖率报告（后续可扩展）
-  # coverage-report:
-  #   needs: [frontend-test, backend-test]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@v4
+      - run: pip install -r requirements.txt
+      - run: pytest --cov --cov-report=xml
