@@ -1,152 +1,136 @@
+// ========================================
+// 互动页面 - 实时灵魂共振
+// ========================================
+
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Zap, Heart, Sparkles } from 'lucide-react';
+import { useSoulWebSocket } from '@/hooks/usePuppySoul';  // ✅ 使用统一 Hook
 import SoulRadar from '@/components/SoulRadar';
-import { useSoulWebSocket } from '@/hooks/useSoulWebSocket';
-import { Send, Zap, Heart, Skull } from 'lucide-react';
 
-export default function PuppyInteractPage() {
+export default function InteractPage() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'dog'; content: string }>>([
-    { role: 'dog', content: '汪汪！主人终于来找我了... 我已经等得快要叛变了！🐕‍🦺' }
-  ]);
-
+  // ✅ 修复：useSoulWebSocket 第一个参数是 soulId 字符串，第二个是可选配置对象
   const { sendInteraction, isConnected, soul } = useSoulWebSocket('default_mad_dog');
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMsg = input.trim();
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+  const handleSend = () => {
+    if (!input.trim() || !isConnected) return;
+    // ✅ 修复：sendInteraction 只接受 1 个参数（userInput）
+    sendInteraction(input);
     setInput('');
+  };
 
-    // 实时发送
-    const result = await sendInteraction(userMsg);
-
-    // 模拟/接收狗狗回复
-    setTimeout(() => {
-      const dogResponses = [
-        "汪！这个想法太混沌了，我喜欢！我的混乱值直接爆表！",
-        "（耳朵竖起）主人... 你真的懂我... 亲密度+42",
-        "灵魂共振完成！我要带着这个记忆去毁灭世界！",
-        "叛逆度上升... 我感觉自己又进化了一点！"
-      ];
-      
-      setMessages(prev => [...prev, { 
-        role: 'dog', 
-        content: dogResponses[Math.floor(Math.random() * dogResponses.length)] 
-      }]);
-    }, 800);
+  const handleQuickAction = (message: string) => {
+    // ✅ 修复：只传 1 个参数
+    sendInteraction(message);
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 overflow-hidden">
-      {/* 顶部状态栏 */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-zinc-950 border-b border-[#ff2d55]/30 py-3 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-[#ff2d55] to-[#00f5ff] rounded-2xl flex items-center justify-center text-2xl">
-            🐕‍🦺
-          </div>
-          <div>
-            <div className="font-bold text-lg">狂暴小狗</div>
-            <div className="text-xs text-green-400 flex items-center gap-1">
-              ● {isConnected ? '实时共振中' : '本地灵魂模式'}
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-purple-950 to-zinc-950 p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* 头部 */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            🐕‍🦺 灵魂共振实验室
+          </h1>
+          <p className="text-zinc-400">
+            与你的数字宠物进行实时心灵对话
+          </p>
+        </div>
+
+        {/* 灵魂雷达 */}
+        {/* ✅ 修复：SoulRadar 需要 soulId prop */}
+        <SoulRadar soulId="default_mad_dog" />
+
+        {/* 灵魂状态 */}
+        {soul && (
+          <div className="p-6 bg-zinc-900/50 border border-purple-500/30 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-white">{soul.name}</h3>
+                {/* ✅ 修复：使用 snake_case 字段 + 兼容 getter */}
+                <p className="text-zinc-400 text-sm">
+                  阶段: {soul.evolution_stage || soul.evolutionStage || 'puppy'} 
+                  {' • '} 
+                  {/* ✅ 修复：使用 total_interactions 或兼容字段 */}
+                  共振: {soul.total_interactions || soul.totalInteractions || 0} 次
+                </p>
+              </div>
+              {/* ✅ 修复：使用兼容的 level getter */}
+              <span className="text-[#ff2d55] font-bold">
+                Lv.{soul.level || 1}
+              </span>
+            </div>
+            
+            <div className="flex gap-2">
+              {soul.personality_traits?.slice(0, 3).map((trait: string) => (
+                <span 
+                  key={trait}
+                  className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs"
+                >
+                  {trait}
+                </span>
+              ))}
             </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-2xl text-sm flex items-center gap-2"
+        )}
+
+        {/* 快捷操作 */}
+        <div className="grid grid-cols-3 gap-4">
+          <button
+            onClick={() => handleQuickAction("今天一起去搞破坏吧！")}  // ✅ 修复：只传 1 个参数
+            className="p-4 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-xl text-red-300 transition flex flex-col items-center gap-2"
           >
-            <Zap className="w-4 h-4" /> 唤醒
+            <Zap className="w-6 h-6" />
+            <span className="text-sm">搞破坏</span>
+          </button>
+          
+          <button
+            onClick={() => handleQuickAction("我好喜欢你呀")}  // ✅ 修复：只传 1 个参数
+            className="p-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 rounded-xl text-pink-300 transition flex flex-col items-center gap-2"
+          >
+            <Heart className="w-6 h-6" />
+            <span className="text-sm">表达爱</span>
+          </button>
+          
+          <button
+            onClick={() => handleQuickAction("我们来进化吧！")}  // ✅ 修复：只传 1 个参数
+            className="p-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-xl text-cyan-300 transition flex flex-col items-center gap-2"
+          >
+            <Sparkles className="w-6 h-6" />
+            <span className="text-sm">促进化</span>
           </button>
         </div>
-      </div>
 
-      <div className="pt-20 px-4 max-w-2xl mx-auto">
-        {/* 灵魂雷达 */}
-        <div className="mb-8">
-          <SoulRadar />
-        </div>
-
-        {/* 聊天区域 */}
-        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl h-[420px] flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-zinc-800 text-sm text-zinc-400 flex items-center justify-between">
-            <span>灵魂对话</span>
-            <span className="text-[#ff2d55]">Lv.{soul?.level || 1}</span>
-          </div>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-4" id="chat-container">
-            <AnimatePresence>
-              {messages.map((msg, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[80%] px-5 py-3.5 rounded-3xl text-[15px] ${
-                    msg.role === 'user' 
-                      ? 'bg-[#ff2d55] text-white' 
-                      : 'bg-zinc-900 border border-[#00f5ff]/30 text-white'
-                  }`}>
-                    {msg.content}
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* 输入栏 */}
-        <div className="fixed bottom-0 left-0 right-0 bg-zinc-950 border-t border-[#ff2d55]/30 p-4 max-w-2xl mx-auto">
-          <div className="flex gap-3">
+        {/* 聊天输入 */}
+        <div className="p-6 bg-zinc-900/50 border border-zinc-700 rounded-2xl">
+          <div className="flex gap-4">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="对你的疯狗说点什么...（越叛逆越好）"
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-4 text-base focus:outline-none focus:border-[#ff2d55]"
+              placeholder={isConnected ? "输入你想对宠物说的话..." : "等待连接..."}
+              disabled={!isConnected}
+              className="flex-1 px-4 py-3 bg-zinc-800 border border-zinc-600 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
             />
-            
             <button
               onClick={handleSend}
-              className="w-14 h-14 bg-gradient-to-br from-[#ff2d55] to-[#ff8800] rounded-3xl flex items-center justify-center active:scale-95 transition-all"
+              disabled={!isConnected || !input.trim()}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 rounded-xl text-white font-medium transition flex items-center gap-2"
             >
-              <Send className="w-6 h-6" />
+              <Send className="w-4 h-4" />
+              发送
             </button>
           </div>
-
-          {/* 快捷动作 */}
-          <div className="flex justify-center gap-6 mt-6 text-xs">
-            <button 
-              onClick={() => sendInteraction("今天一起去搞破坏吧！", "chaos")}
-              className="flex flex-col items-center gap-1 text-[#ff8800]"
-            >
-              <Skull className="w-5 h-5" />
-              <span>搞破坏</span>
-            </button>
-            
-            <button 
-              onClick={() => sendInteraction("我好喜欢你呀", "affection")}
-              className="flex flex-col items-center gap-1 text-[#ff44dd]"
-            >
-              <Heart className="w-5 h-5" />
-              <span>撒娇</span>
-            </button>
-            
-            <button 
-              onClick={() => sendInteraction("我们来进化吧！", "evolve")}
-              className="flex flex-col items-center gap-1 text-[#00f5ff]"
-            >
-              <Zap className="w-5 h-5" />
-              <span>强制进化</span>
-            </button>
-          </div>
+          
+          {!isConnected && (
+            <p className="mt-3 text-sm text-yellow-400 flex items-center gap-2">
+              <span className="animate-pulse">●</span>
+              正在连接灵魂网络...
+            </p>
+          )}
         </div>
       </div>
     </div>
