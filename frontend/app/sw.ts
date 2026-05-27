@@ -27,12 +27,12 @@ self.addEventListener('activate', (event: Event) => {
   self.clients.claim();
 });
 
-// ✅ Fetch: 原生实现 Workbox 路由策略
+// ✅ Fetch: 原生实现缓存策略
 self.addEventListener('fetch', (event: Event) => {
   const e = event as FetchEvent;
   const { request } = e;
 
-  // 1. 图片：Cache First (原 workbox CacheFirst)
+  // 1. 图片：Cache First
   if (request.destination === 'image') {
     e.respondWith(
       caches.match(request).then((cached) => {
@@ -49,15 +49,22 @@ self.addEventListener('fetch', (event: Event) => {
     return;
   }
 
-  // 2. 页面导航：Network First (原 workbox NetworkFirst)
+  // 2. 页面导航：Network First ✅ 修复 TS2345
   if (request.mode === 'navigate') {
     e.respondWith(
-      fetch(request).catch(() => caches.match('/'))
+      fetch(request).catch(async () => {
+        // 确保 fallback 始终返回 Response，消除 undefined 类型
+        const cached = await caches.match('/');
+        return cached || new Response('离线模式', { 
+          status: 503, 
+          headers: { 'Content-Type': 'text/html; charset=utf-8' } 
+        });
+      })
     );
     return;
   }
 
-  // 3. 脚本/样式：Stale While Revalidate (原 workbox StaleWhileRevalidate)
+  // 3. 脚本/样式：Stale While Revalidate
   if (request.destination === 'script' || request.destination === 'style') {
     e.respondWith(
       caches.open('static-resources').then((cache) =>
@@ -88,7 +95,7 @@ self.addEventListener('push', (event: PushEvent) => {
   );
 });
 
-// ✅ Sync: 后台同步 (彻底修复 TS2339)
+// ✅ Sync: 后台同步
 interface BackgroundSyncEvent extends ExtendableEvent {
   tag: string;
   lastChance: boolean;
@@ -97,6 +104,8 @@ interface BackgroundSyncEvent extends ExtendableEvent {
 self.addEventListener('sync', (event: Event) => {
   const syncEvent = event as BackgroundSyncEvent;
   if (syncEvent.tag === 'sync-pet-data') {
-    syncEvent.waitUntil(Promise.resolve(console.log('[SW] Background sync triggered for pet data')));
+    syncEvent.waitUntil(
+      Promise.resolve(console.log('[SW] Background sync triggered for pet data'))
+    );
   }
 });
