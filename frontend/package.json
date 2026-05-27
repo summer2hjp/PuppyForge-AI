@@ -8,9 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "jest --config __tests__/utils/jest.config.ts",
-    "test:ci": "jest --config __tests__/utils/jest.config.ts --coverage --ci --maxWorkers=2 --passWithNoTests --detectOpenHandles",
-    "test:watch": "jest --config __tests__/utils/jest.config.ts --watch"
+    "test": "jest --config __tests__/utils/jest.config.mts",
+    "test:ci": "jest --config __tests__/utils/jest.config.mts --coverage --ci --maxWorkers=2 --passWithNoTests --detectOpenHandles",
+    "test:watch": "jest --config __tests__/utils/jest.config.mts --watch"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
