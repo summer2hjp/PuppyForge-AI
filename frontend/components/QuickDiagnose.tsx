@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { analyzePetPhoto, type VisionAnalysisResult } from '@/lib/vision-analyzer';
+import { analyzePetPhoto, type VisionAnalysis } from '@/lib/vision-analyzer';
 
 interface QuickDiagnoseProps {
   puppyId: string;
