@@ -6,6 +6,7 @@ const createJestConfig = nextJest({
 });
 
 const customJestConfig: Config = {
+  testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'], // 按实际路径调整
   testEnvironment: 'jest-environment-jsdom',
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
