@@ -1,5 +1,5 @@
 // app/api/auth/login/route.ts
-import { generateTokens } from '@/lib/auth';
+import { generateTokens, signRefreshToken } from '@/lib/auth';
 import { verifyUserPassword } from '@/lib/db';
 
 async function readRequestBody(request: Request): Promise<Record<string, unknown> | null> {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     const tokenPayload =
       typeof generated === 'string'
-        ? { token: generated, refreshToken: generated }
+        ? { token: generated, refreshToken: await signRefreshToken({ userId: user.id, email: user.email, role: user.role ?? 'user' }) }
         : generated;
 
     return jsonResponse({

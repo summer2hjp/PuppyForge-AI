@@ -1,5 +1,5 @@
 // app/api/auth/register/route.ts
-import { generateTokens } from '@/lib/auth';
+import { generateTokens, signRefreshToken } from '@/lib/auth';
 import { createUser } from '@/lib/db';
 
 async function readRequestBody(request: Request): Promise<Record<string, unknown> | null> {
@@ -50,6 +50,9 @@ export async function POST(request: Request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return jsonResponse({ message: '邮箱格式不正确' }, 400);
     }
+    if (password.length < 8) {
+      return jsonResponse({ message: '密码长度至少为8位' }, 400);
+    }
     if (!confirmPassword || password !== confirmPassword) {
       return jsonResponse({ message: '两次输入的密码不匹配' }, 400);
     }
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
     });
     const tokenPayload =
       typeof generated === 'string'
-        ? { token: generated, refreshToken: generated }
+        ? { token: generated, refreshToken: await signRefreshToken({ userId: user.id, email: user.email, role: user.role ?? 'user' }) }
         : generated;
 
     return jsonResponse({
