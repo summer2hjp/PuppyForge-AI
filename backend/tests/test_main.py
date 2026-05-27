@@ -10,5 +10,11 @@ def test_health_check():
     assert response.json()["status"] == "healthy"
 
 def test_cors_headers():
-    response = client.options("/auth/login")
+    response = client.options(
+        "/api/auth/login",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
     assert response.headers.get("access-control-allow-origin") is not None
