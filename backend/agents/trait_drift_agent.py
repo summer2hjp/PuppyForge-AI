@@ -1,4 +1,5 @@
 from .base_agent import BaseAgent
+from typing import Dict, Any
 from config import settings
 from models import PuppySoul
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from uuid import uuid4
 from datetime import datetime
 
@@ -185,3 +185,18 @@ class PuppySoulUpdate(BaseModel):
 class TraitDriftRequest(BaseModel):
     """性格漂移请求"""
     changes: Dict[str, float]
+
+
+class InteractionResult(BaseModel):
+    """互动结果响应"""
+    soul: PuppySoul
+    response: str
+    trait_changes: Dict[str, float]
+    agent_insights: Dict[str, Any] = PydanticField(default_factory=dict)
+    memory_injected: bool = True
+
+
+class ErrorResponse(BaseModel):
+    """统一错误响应"""
+    message: str
+    detail: Optional[str] = None

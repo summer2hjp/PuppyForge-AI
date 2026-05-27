@@ -1,6 +1,7 @@
 from .base_agent import BaseAgent
-from typing import Dict
+from typing import Dict, Any
 from config import settings
+from models import PuppySoul
 
 class GrowthAgent(BaseAgent):
     def __init__(self):
