@@ -142,6 +142,17 @@ class PuppySoul(SQLModel, table=True):
         return max(traits_dict, key=traits_dict.get)
 
 
+# === 事件模型 ===
+
+class SoulEvent(BaseModel):
+    """灵魂事件记录"""
+    event_id: str = Field(default_factory=lambda: str(uuid4()))
+    soul_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    event_type: str
+    payload: Dict[str, Any]
+
+
 # === API 模型 ===
 
 class PuppySoulCreate(BaseModel):
