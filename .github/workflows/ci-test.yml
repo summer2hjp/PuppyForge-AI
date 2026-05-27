@@ -65,7 +65,6 @@ jobs:
       - name: 运行pytest单元测试
         working-directory: ./backend
         run: |
-          export PYTHONPATH=$PWD
           pytest tests/ -v --cov=. --cov-report=xml
 
       - name: 上传覆盖率报告
