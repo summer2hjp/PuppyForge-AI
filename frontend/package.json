@@ -2,6 +2,9 @@
   "name": "puppyforge-ai",
   "version": "4.2.0",
   "private": true,
+  "config": {
+    "legacy-peer-deps": true
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
