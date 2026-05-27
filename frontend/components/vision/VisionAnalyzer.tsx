@@ -1,106 +1,194 @@
+// ========================================
+// 视觉分析器组件 - 专业模式
+// ========================================
+
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { analyzePetPhoto, type VisionAnalysisResult } from '@/lib/vision-analyzer';
+import Image from 'next/image';
+import { Upload, Loader2, Settings, Sparkles, AlertTriangle } from 'lucide-react';
+// ✅ 修复：使用正确的类型名 VisionAnalysis
+import { analyzePetPhoto, type VisionAnalysis, type VisionAnalyzerOptions } from '@/lib/vision-analyzer';
 
 interface VisionAnalyzerProps {
   puppyId: string;
-  onAnalysisComplete?: (result: VisionAnalysisResult) => void;
+  onResult?: (result: VisionAnalysis) => void;
+  className?: string;
 }
 
-export default function VisionAnalyzer({ puppyId, onAnalysisComplete }: VisionAnalyzerProps) {
-  const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export default function VisionAnalyzer({ puppyId, onResult, className = '' }: VisionAnalyzerProps) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<VisionAnalysis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [options, setOptions] = useState<VisionAnalyzerOptions>({
+    model: 'grok-vision',
+    confidence_threshold: 0.7,
+    include_metadata: true
+  });
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // ✅ 修复：清理 Blob URL
+  const cleanupPreview = useCallback(() => {
+    if (preview) {
+      URL.revokeObjectURL(preview);
+      setPreview(null);
+    }
+  }, [preview]);
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      await runAnalysis(base64);
-    };
-    reader.readAsDataURL(file);
-  }, []);
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    cleanupPreview();
+    setError(null);
+    setResult(null);
+    
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    
+    // 验证
+    if (!selectedFile.type.startsWith('image/')) {
+      setError('仅支持图片文件');
+      return;
+    }
+    if (selectedFile.size > 20 * 1024 * 1024) {
+      setError('图片不能超过 20MB');
+      return;
+    }
+    
+    setFile(selectedFile);
+    setPreview(URL.createObjectURL(selectedFile));
+  }, [cleanupPreview]);
 
-  const runAnalysis = useCallback(async (imageData: string) => {
-    setIsLoading(true);
+  const handleAnalyze = useCallback(async () => {
+    if (!file) {
+      setError('请先上传图片');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
     try {
-      const rawResult = await analyzePetPhoto({
-        puppy_id: puppyId,
-        image_base64: imageData,
-        description: 'Vision analysis upload',
-        timestamp: new Date().toISOString(),
+      // ✅ 修复：正确传递参数（File + 配置对象）
+      const analysisResult = await analyzePetPhoto(file, {
+        model: options.model,
+        confidence_threshold: options.confidence_threshold,
+        include_metadata: options.include_metadata
       });
-
-      // ✅ 严格类型填充，消除 TS2345 报错
-      const completeResult: VisionAnalysisResult = {
-        ...rawResult,
-        timestamp: rawResult.timestamp ?? new Date().toISOString(),
-        breed: rawResult.breed ?? 'AI 识别中...',
-        emotionalState: rawResult.emotionalState ?? 'calm',
-        recommendation: rawResult.recommendation ?? '建议补充详细健康档案与行为记录',
-        diagnosis: rawResult.diagnosis ?? {},
-        healthScore: typeof rawResult.healthScore === 'number' ? rawResult.healthScore : 0,
-      };
-
-      setAnalysis(completeResult);
-      onAnalysisComplete?.(completeResult);
+      
+      setResult(analysisResult);
+      onResult?.(analysisResult);
     } catch (err) {
       console.error('Vision analysis failed:', err);
+      setError(err instanceof Error ? err.message : '分析失败');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [puppyId, onAnalysisComplete]);
+  }, [file, options, onResult]);
+
+  const handleReset = useCallback(() => {
+    cleanupPreview();
+    setFile(null);
+    setResult(null);
+    setError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [cleanupPreview]);
+
+  const updateOption = useCallback(<K extends keyof VisionAnalyzerOptions>(
+    key: K,
+    value: VisionAnalyzerOptions[K]
+  ) => {
+    setOptions(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  // ✅ 修复：组件卸载清理
+  useState(() => () => cleanupPreview());
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800">
-      <h3 className="text-lg font-semibold text-white">🔍 AI 视觉分析模块</h3>
-
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        disabled={isLoading}
-        className="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 disabled:opacity-50"
-      />
-
-      {isLoading && (
-        <div className="flex items-center gap-2 text-zinc-400">
-          <span className="animate-spin">🌀</span> 正在解析宠物特征与行为向量...
-        </div>
-      )}
-
-      {analysis && (
-        <div className="mt-4 space-y-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-zinc-500">品种识别</p>
-              <p className="text-white font-medium">{analysis.breed}</p>
-            </div>
-            <div>
-              <p className="text-zinc-500">情绪状态</p>
-              <p className="text-white font-medium">{analysis.emotionalState}</p>
-            </div>
-          </div>
-          <div>
-            <p className="text-zinc-500 text-sm">健康评分</p>
-            <div className="w-full bg-zinc-700 rounded-full h-2.5 mt-1">
-              <div
-                className="bg-emerald-500 h-2.5 rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, analysis.healthScore))}%` }}
-              />
-            </div>
-            <p className="text-xs text-zinc-400 mt-1">{analysis.healthScore}/100</p>
-          </div>
-          <p className="text-sm text-zinc-300 border-t border-zinc-700 pt-3 mt-3">
-            💡 {analysis.recommendation}
+    <div className={`space-y-6 ${className}`}>
+      {/* 头部 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-400" />
+            专业视觉分析
+          </h3>
+          <p className="text-sm text-zinc-400">
+            多模态 AI 引擎 • 宠物 ID: {puppyId.slice(0, 12)}...
           </p>
         </div>
+        {result && (
+          <button
+            onClick={handleReset}
+            className="text-sm text-zinc-400 hover:text-white transition"
+          >
+            重新分析
+          </button>
+        )}
+      </div>
+
+      {/* 上传区域 */}
+      {!preview ? (
+        <label className="block cursor-pointer">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <div className="border-2 border-dashed border-zinc-600 hover:border-purple-500 rounded-2xl p-10 text-center transition group bg-zinc-900/30">
+            <Upload className="w-14 h-14 mx-auto mb-4 text-zinc-500 group-hover:text-purple-400 transition" />
+            <p className="text-zinc-300 font-medium mb-2">
+              拖拽或点击上传图片
+            </p>
+            <p className="text-xs text-zinc-500">
+              支持 JPG/PNG/WEBP • 最大 20MB • 建议分辨率 1024x1024+
+            </p>
+          </div>
+        </label>
+      ) : (
+        /* 预览区域 */
+        <div className="relative rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-800">
+          <Image
+            src={preview}
+            alt="Analysis preview"
+            width={600}
+            height={400}
+            className="w-full h-64 object-cover"
+            unoptimized
+          />
+          <button
+            onClick={handleReset}
+            className="absolute top-3 right-3 p-2 bg-black/70 hover:bg-black rounded-lg text-white transition"
+          >
+            ×
+          </button>
+          
+          {/* 分析状态覆盖层 */}
+          {loading && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="text-center text-white">
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+                <p className="text-sm">AI 引擎分析中...</p>
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </div>
-  );
-}
+
+      {/* 高级选项 */}
+      {preview && !result && !loading && (
+        <div className="p-4 bg-zinc-800/50 rounded-xl space-y-4">
+          <div className="flex items-center gap-2 text-zinc-300">
+            <Settings className="w-4 h-4" />
+            <span className="text-sm font-medium">分析配置</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* 模型选择 */}
+            <div>
+              <label className="block text-zinc-400 mb-1">AI 模型</
