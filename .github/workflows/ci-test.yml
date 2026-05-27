@@ -1,5 +1,62 @@
+name: 🔥 PuppyForge-AI 全栈 CI 轰炸机
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  frontend-test:
+    name: 🚀 Frontend Jest 狂轰
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout 代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚡ Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 安装前端依赖
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔍 TypeScript 类型检查
+        run: npm run type-check
+
+      - name: 🧪 Jest 测试 + Coverage
+        run: npm run test:ci
+
+      - name: 📊 上传 Frontend Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 14
+
+      - name: 📈 Codecov Frontend
+        uses: codecov/codecov-action@v4
+        with:
+          directory: frontend/coverage
+          flags: frontend
+          fail_ci_if_error: false
+
   backend-test:
-    name: 🐍 Backend pytest + Coverage
+    name: 🐍 Backend pytest 核弹
     runs-on: ubuntu-latest
     
     defaults:
@@ -17,16 +74,16 @@
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
 
-      - name: 📦 安装依赖（含测试包）
+      - name: 📦 安装后端依赖（强制加测试包）
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-cov   # 强制安装测试依赖
+          pip install pytest pytest-cov
 
       - name: 🧪 运行 pytest + Coverage
         run: |
-          pytest --cov=. --cov-report=xml --cov-report=term-missing -q
+          pytest --cov=. --cov-report=xml --cov-report=term-missing -q --maxfail=5
 
-      - name: 📊 上传 Coverage 报告
+      - name: 📊 上传 Backend Coverage
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
