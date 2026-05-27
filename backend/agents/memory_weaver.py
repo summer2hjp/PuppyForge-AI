@@ -1,5 +1,7 @@
 from .base_agent import BaseAgent
+from typing import Dict, Any
 from models import PetMemory
+from models import PuppySoul
 from config import settings
 from datetime import datetime
 import uuid
