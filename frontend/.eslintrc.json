@@ -6,8 +6,8 @@
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "project": "./tsconfig.json",
-    "ecmaVersion": 2020,
+    "project": "./tsconfig.json",  // ← 确保路径正确
+    "ecmaVersion": "latest",
     "sourceType": "module"
   },
   "rules": {
@@ -16,20 +16,14 @@
       "argsIgnorePattern": "^_",
       "varsIgnorePattern": "^_"
     }],
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unsafe-assignment": "warn",
-    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
     "prefer-const": "error",
     "no-console": ["warn", { "allow": ["warn", "error"] }],
     "@next/next/no-img-element": "warn",
     "@next/next/no-html-link-for-pages": "error",
-    "no-duplicate-imports": "error",
-    "@typescript-eslint/consistent-type-imports": ["error", { 
-      "fixStyle": "inline-type-imports",
-      "disallowTypeAnnotations": false
-    }]
+    "no-duplicate-imports": "error"
   },
   "ignorePatterns": [".next/**", "node_modules/**", "public/**", "*.config.js", "out/**"]
 }

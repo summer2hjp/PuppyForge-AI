@@ -62,22 +62,11 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.d.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    ".next",
-    "out",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "**/*.test.tsx",
-    "**/*.spec.tsx",
     "__tests__/**",
-    "app/**",
-    "components/**",
-    "lib/**",
     "playwright.config.ts"
   ]
 }
