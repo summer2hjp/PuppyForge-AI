@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   frontend-test:
-    name: Frontend TypeScript 检查
+    name: Frontend TypeScript Check
     runs-on: ubuntu-latest
     
     defaults:
@@ -27,6 +30,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: 安装Frontend依赖
+        # 兼容当前锁文件中的 React Three 依赖组合
         run: npm ci --legacy-peer-deps
 
       - name: 运行TypeScript检查
