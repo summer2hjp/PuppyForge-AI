@@ -1,0 +1,163 @@
+# .github/workflows/test-ci.yml
+name: 🔥 PuppyForge-AI 测试核弹 (Backend + Frontend)
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'requirements.txt'
+      - 'package.json'
+      - '.github/workflows/test-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+  workflow_dispatch:  # 支持手动触发
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  PYTEST_COVERAGE: '80'
+
+jobs:
+  backend-test:
+    name: 🐍 Backend pytest 完整测试
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: 📥 Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: 📦 安装依赖
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov httpx pytest-mock
+
+      - name: 🧪 运行 Backend 单元测试 + 覆盖率
+        run: |
+          pytest tests/ \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --asyncio-mode=auto \
+            -v \
+            --maxfail=5
+
+      - name: 📊 上传覆盖率报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            backend/htmlcov/
+            backend/coverage.xml
+          retention-days: 14
+
+      - name: 📈 Codecov Backend
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-pytest
+          fail_ci_if_error: false
+
+  frontend-test:
+    name: ⚛️ Frontend Jest 测试
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: ⚡ Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 安装依赖
+        run: npm ci
+
+      - name: 🔍 TypeScript + Lint 检查
+        run: |
+          npm run type-check
+          npm run lint
+
+      - name: 🧪 Jest 测试 + Coverage
+        run: npm run test:ci
+
+      - name: 📊 上传 Frontend Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 14
+
+      - name: 📈 Codecov Frontend
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./frontend/coverage
+          flags: frontend
+
+  # 集成/系统测试（可选，较重）
+  integration-test:
+    name: 🔗 集成测试
+    needs: [backend-test, frontend-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python & Node
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 安装依赖并运行 Docker 测试
+        run: |
+          echo "集成测试待补充（Docker Compose + E2E）"
+          # docker-compose -f docker-compose.test.yml up -d
+          # pytest tests/integration/ -v
