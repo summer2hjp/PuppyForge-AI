@@ -58,12 +58,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest backend/tests/ \
-            --cov=. \
-            --cov-report=term-missing \
-            --asyncio-mode=auto \
-            -q \
-            --maxfail=15
+          python -m pytest backend/tests/ -v
 
   frontend-test:
     name: ⚛️ Frontend - Jest
