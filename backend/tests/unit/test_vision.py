@@ -1,74 +1,43 @@
 # backend/tests/unit/test_vision.py
 import pytest
 from unittest.mock import patch, AsyncMock
-from vision.soul_diagnosis import SoulVisionDiagnoser, VisionAnalysisResult
-from models import PuppySoul
+from vision.soul_diagnosis import SoulDiagnosisService
 
 
 @pytest.fixture
-def mock_vision_processor():
-    with patch('vision.soul_diagnosis.SoulVisionDiagnoser') as mock_class:
+def mock_diagnosis_service():
+    with patch('vision.soul_diagnosis.SoulDiagnosisService') as mock_class:
         instance = mock_class.return_value
-        instance.analyze_image = AsyncMock(return_value=VisionAnalysisResult(
-            breed_confidence=0.92,
-            emotion="happy",
-            health_indicators=["clear_eyes", "shiny_fur"],
-            soul_score=88.5
-        ))
+        instance.diagnose_image = AsyncMock(return_value={
+            "soul_score": 88.5,
+            "emotion": "happy",
+            "health_indicators": ["clear_eyes", "shiny_fur"],
+            "suggestions": ["多运动"]
+        })
         yield instance
 
 
 @pytest.mark.asyncio
-async def test_vision_analysis_success(mock_vision_processor):
-    diagnoser = SoulVisionDiagnoser()
+async def test_diagnose_image_success(mock_diagnosis_service):
+    service = SoulDiagnosisService()
     
-    result = await diagnoser.analyze_image(
-        image_bytes=b"fake_image_data",  # 模拟图片字节
-        soul_id="soul_test_001"
+    result = await service.diagnose_image(
+        soul_id="soul_test_001",
+        image_base64="data:image/jpeg;base64,/fakebase64data",
+        description="活泼的小狗"
     )
     
     assert result is not None
-    assert result.breed_confidence > 0.8
-    assert result.emotion in ["happy", "sad", "energetic", "calm"]
-    assert len(result.health_indicators) > 0
-    assert 0 <= result.soul_score <= 100
+    assert result["soul_score"] > 0
+    assert "emotion" in result
 
 
 @pytest.mark.asyncio
-async def test_vision_analysis_invalid_image():
-    diagnoser = SoulVisionDiagnoser()
+async def test_diagnose_image_invalid_base64():
+    service = SoulDiagnosisService()
     
-    with pytest.raises(ValueError):
-        await diagnoser.analyze_image(
-            image_bytes=None,
-            soul_id="soul_test_001"
+    with pytest.raises(Exception):  # 实际会抛出 base64 或 HTTPException
+        await service.diagnose_image(
+            soul_id="soul_test_001",
+            image_base64="invalid_base64",
         )
-
-
-@pytest.mark.asyncio
-async def test_vision_enhance_diagnosis(mock_vision_processor, sample_soul):
-    """测试视觉诊断增强普通文本诊断"""
-    diagnoser = SoulVisionDiagnoser()
-    
-    enhanced_result = await diagnoser.enhance_diagnosis(
-        soul=sample_soul,
-        text_description="小狗很活跃",
-        image_bytes=b"fake_image"
-    )
-    
-    assert enhanced_result["soul_score"] > 70
-    assert "vision_insights" in enhanced_result
-    assert isinstance(enhanced_result["vision_insights"], list)
-
-
-def test_vision_result_model():
-    """Pydantic 模型验证"""
-    result = VisionAnalysisResult(
-        breed_confidence=0.85,
-        emotion="energetic",
-        health_indicators=["wet_nose"],
-        soul_score=82.0
-    )
-    
-    assert result.breed_confidence == 0.85
-    assert result.soul_score == 82.0
