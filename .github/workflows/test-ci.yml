@@ -69,17 +69,8 @@ jobs:
         if: always()
         with:
           name: backend-coverage
-          path: |
-            backend/htmlcov/
-            backend/coverage.xml
+          path: backend/htmlcov/
           retention-days: 7
-
-      - name: 📈 Codecov Backend
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./backend/coverage.xml
-          flags: backend
-          fail_ci_if_error: false
 
   frontend-test:
     name: ⚛️ Frontend - Jest
@@ -98,9 +89,23 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json   # ← 关键修复
 
       - name: 📦 安装依赖
-        run: npm ci
+        run: npm ci   # 使用 ci 比 install 更严格
+
+      - name: 🔍 类型检查 & Lint
+        run: |
+          npm run type-check || true
+          npm run lint || true
 
       - name: 🧪 Jest 测试
         run: npm test -- --ci --coverage || true
+
+      - name: 📊 上传 Frontend Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
