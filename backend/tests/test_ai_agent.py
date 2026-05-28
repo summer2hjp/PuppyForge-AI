@@ -7,7 +7,7 @@ def orchestrator():
     return SwarmOrchestrator()
 
 @pytest.mark.asyncio
-class TestAI-Agent系统测试:
+class TestAIAgent:
 
     async def test_orchestrator_full_pipeline(self, orchestrator):
         """完整AI-Agent系统测试：Vision → Diagnosis → Memory → TraitDrift"""
