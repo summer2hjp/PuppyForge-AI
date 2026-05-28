@@ -56,7 +56,7 @@ jobs:
       - name: 🧪 运行 Backend 测试
         run: |
           python -m pytest tests/ -v --tb=short \
-            --cov=backend --cov-report=xml --cov-report=term-missing
+            --cov=. --cov-report=xml --cov-report=term-missing
         continue-on-error: false
 
   frontend-test:
