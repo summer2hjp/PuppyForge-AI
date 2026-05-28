@@ -1,4 +1,4 @@
 [tool.pytest.ini_options]
+testpaths = ["backend/tests"]
 pythonpath = ["."]
-addopts = "-v --tb=short"
-testpaths = ["backend/tests"]  # 若 tests 在 backend 内
+addopts = "-v --tb=short --strict-markers"
