@@ -5,7 +5,7 @@ import binascii
 import io
 from PIL import Image, UnidentifiedImageError
 from typing import Optional
-from config import settings
+from backend.config import settings
 
 # 假设的 VLM 服务客户端（需实现）
 # from your_vlm_client import AsyncVLMClient

@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 from typing import Optional
 import httpx
 
-from config import settings
+from backend.config import settings
 from models.auth import User, UserRead, UserCreate, UserRole
-from database import get_db
+from backend.database import get_db
 from sqlmodel import Session, select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -1,5 +1,5 @@
 import random
-from models import PetTraits
+from backend.models import PetTraits
 from typing import Dict, List
 
 class TraitDriftAgent:

@@ -3,7 +3,7 @@ from typing import Dict, Any
 from tenacity import retry, stop_after_attempt, wait_exponential
 from litellm import acompletion
 
-from config import settings
+from backend.config import settings
 
 class BaseAgent(ABC):
     def __init__(self, name: str = "BaseAgent"):

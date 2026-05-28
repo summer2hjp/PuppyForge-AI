@@ -7,15 +7,15 @@ import logging
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from config import settings
-from models import (
+from backend.config import settings
+from backend.models import (
     PuppySoul, 
     PetMemory, 
     SoulEvent, 
     InteractionResult, 
     PetTraits
 )
-from database import get_db, get_qdrant_client
+from backend.database import get_db, get_qdrant_client
 from agents import (
     diagnosis_agent,
     growth_agent,

@@ -1,7 +1,7 @@
 from .base_agent import BaseAgent
 from typing import Dict, Any
-from config import settings
-from models import PuppySoul
+from backend.config import settings
+from backend.models import PuppySoul
 
 class DiagnosisAgent(BaseAgent):
     def __init__(self):

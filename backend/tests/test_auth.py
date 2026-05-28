@@ -4,7 +4,7 @@ from datetime import timedelta
 from jose import jwt
 from fastapi import HTTPException
 
-from auth import (
+from backend.auth import (
     create_access_token,
     verify_password,
     get_password_hash,

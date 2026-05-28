@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import uuid
 
-from config import settings
+from backend.config import settings
 
 
 class PetTraits(BaseModel):
