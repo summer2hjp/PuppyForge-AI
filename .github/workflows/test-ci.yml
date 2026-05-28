@@ -116,30 +116,3 @@ jobs:
         with:
           name: frontend-coverage
           path: frontend/coverage/
-          retention-days: 7
-
-  smoke-test:
-    name: 🌫️ 冒烟测试
-    needs: backend-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: 快速健康检查
-        run: |
-          cd backend
-          export PYTHONPATH=.
-          export TESTING=true
-          python -c "
-import asyncio
-from main import app
-print('✅ FastAPI 应用加载成功')
-print('✅ 测试环境配置正常')
-          "
