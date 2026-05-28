@@ -1,5 +1,5 @@
 # .github/workflows/test-ci.yml
-name: 🔥 PuppyForge-AI CI 测试流水线
+name: 🔥 PuppyForge-AI 测试 CI 流水线
 
 on:
   push:
