@@ -1,5 +1,5 @@
 import pytest
-from backend.vision import analyze_pet_image
+from vision import analyze_pet_image
 
 @pytest.mark.asyncio
 async def test_analyze_pet_image_success(mock_analyze_image):

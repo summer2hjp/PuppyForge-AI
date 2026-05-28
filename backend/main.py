@@ -11,12 +11,12 @@ from slowapi.errors import RateLimitExceeded
 from sqlmodel import select
 from jose import JWTError, jwt
 
-from backend.config import settings
-from backend.auth import router as auth_router, get_current_user
+from config import settings
+from auth import router as auth_router, get_current_user
 from models.auth import User
-from backend.orchestrator import SoulOrchestrator
-from backend.models import ErrorResponse, InteractionResult, PuppySoul
-from backend.database import get_db
+from orchestrator import SoulOrchestrator
+from models import ErrorResponse, InteractionResult, PuppySoul
+from database import get_db
 from sqlmodel import Session
 
 # ==================== 日志 ====================

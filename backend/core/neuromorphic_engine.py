@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 # 导入 Forge Pipeline（深度联动）
-from backend.forge.pipeline import ForgePipeline
+from forge.pipeline import ForgePipeline
 
 class InteractionEvent(BaseModel):
     puppy_id: str

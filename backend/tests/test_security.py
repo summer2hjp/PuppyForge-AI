@@ -1,6 +1,6 @@
 import pytest
 from httpx import AsyncClient
-from backend.auth import create_access_token
+from auth import create_access_token
 
 @pytest.mark.asyncio
 class TestSecurity系统测试:

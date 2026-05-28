@@ -1,5 +1,6 @@
 [tool.pytest.ini_options]
-testpaths = ["backend/tests"]
+testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-v --tb=short --strict-markers"
-asyncio_mode = "auto"
+[tool.ruff]
+src = ["."]

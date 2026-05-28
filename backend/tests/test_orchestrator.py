@@ -1,4 +1,4 @@
-from backend.orchestrator import SwarmOrchestrator
+from orchestrator import SwarmOrchestrator
 
 def test_orchestrator_health_diagnosis():
     orchestrator = SwarmOrchestrator()

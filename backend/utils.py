@@ -2,7 +2,7 @@ from datetime import datetime
 import json
 from typing import Dict, Any
 
-from backend.config import settings
+from config import settings
 
 
 def generate_soul_name() -> str:

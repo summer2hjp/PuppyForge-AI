@@ -1,7 +1,7 @@
 # backend/tests/test_models.py
 import pytest
 import uuid
-from backend.models import PuppySoul, PetTraits, InteractionResult
+from models import PuppySoul, PetTraits, InteractionResult
 
 
 def test_pet_traits():

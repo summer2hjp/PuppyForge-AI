@@ -1,6 +1,6 @@
 import pytest
-from backend.orchestrator import SwarmOrchestrator
-from backend.agents import VisionAgent, DiagnosisAgent, MemoryAgent, TraitDriftAgent
+from orchestrator import SwarmOrchestrator
+from agents import VisionAgent, DiagnosisAgent, MemoryAgent, TraitDriftAgent
 
 @pytest.fixture
 def orchestrator():
