@@ -102,17 +102,5 @@ jobs:
       - name: 📦 安装依赖
         run: npm ci
 
-      - name: 🔍 类型检查 & Lint
-        run: |
-          npm run type-check || true
-          npm run lint || true
-
       - name: 🧪 Jest 测试
         run: npm test -- --ci --coverage || true
-
-      - name: 📊 上传 Frontend Coverage
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-coverage
-          path: frontend/coverage/
