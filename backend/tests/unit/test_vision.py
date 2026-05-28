@@ -1,43 +1,48 @@
 # backend/tests/unit/test_vision.py
 import pytest
 from unittest.mock import patch, AsyncMock
-from vision.soul_diagnosis import SoulDiagnosisService
+from vision.soul_diagnosis import SoulDiagnosisService  # 根据实际结构调整
 
 
 @pytest.fixture
-def mock_diagnosis_service():
+def mock_vision_service():
     with patch('vision.soul_diagnosis.SoulDiagnosisService') as mock_class:
         instance = mock_class.return_value
-        instance.diagnose_image = AsyncMock(return_value={
-            "soul_score": 88.5,
+        instance.diagnose = AsyncMock(return_value={
+            "soul_score": 87.5,
             "emotion": "happy",
-            "health_indicators": ["clear_eyes", "shiny_fur"],
-            "suggestions": ["多运动"]
+            "breed": "柯基",
+            "health_status": "good",
+            "suggestions": ["多陪它玩耍"]
         })
         yield instance
 
 
 @pytest.mark.asyncio
-async def test_diagnose_image_success(mock_diagnosis_service):
+async def test_vision_diagnose_success(mock_vision_service):
+    """视觉诊断核心功能测试"""
     service = SoulDiagnosisService()
     
-    result = await service.diagnose_image(
-        soul_id="soul_test_001",
-        image_base64="data:image/jpeg;base64,/fakebase64data",
-        description="活泼的小狗"
+    result = await service.diagnose(
+        image_base64="data:image/jpeg;base64,fakebase64data123",
+        description="一只活泼的柯基在草地上奔跑",
+        soul_id="soul_test_001"
     )
     
     assert result is not None
-    assert result["soul_score"] > 0
+    assert result["soul_score"] > 70
     assert "emotion" in result
+    assert "suggestions" in result
 
 
 @pytest.mark.asyncio
-async def test_diagnose_image_invalid_base64():
+async def test_vision_invalid_image():
+    """无效图片处理测试"""
     service = SoulDiagnosisService()
     
-    with pytest.raises(Exception):  # 实际会抛出 base64 或 HTTPException
-        await service.diagnose_image(
-            soul_id="soul_test_001",
-            image_base64="invalid_base64",
+    with pytest.raises((ValueError, Exception)):
+        await service.diagnose(
+            image_base64=None,
+            description="测试",
+            soul_id="soul_test_001"
         )
