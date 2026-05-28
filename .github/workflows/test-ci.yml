@@ -55,10 +55,8 @@ jobs:
 
       - name: 🧪 运行 Backend 测试
         working-directory: .
-        env:
-          PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -m pytest backend/tests/ -v --tb=short \
+          python -m pytest tests/ -v --tb=short \
             --cov=backend --cov-report=xml --cov-report=term-missing
         continue-on-error: false
 
