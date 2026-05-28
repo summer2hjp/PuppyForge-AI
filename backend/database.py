@@ -5,15 +5,18 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 from typing import AsyncGenerator
 
-# ====================== 配置 ======================
-DATABASE_URL = os.getenv("DATABASE_URL")
+# ====================== 配置（加强测试环境检测） ======================
+TESTING = os.getenv("TESTING", "false").lower() == "true"
 
-# 测试环境自动切换到 SQLite（解决 async driver 问题）
-if os.getenv("TESTING") or not DATABASE_URL:
+if TESTING:
     DATABASE_URL = "sqlite+aiosqlite:///:memory:"
     echo_sql = True
+    print("🧪 测试模式 - 使用 SQLite 内存数据库")
 else:
-    # 生产环境建议使用 asyncpg
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL 环境变量未设置")
+    # 生产环境使用 asyncpg
     if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
     echo_sql = False
@@ -23,12 +26,9 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=echo_sql,
     future=True,
-    pool_pre_ping=True,           # 防止连接断开
-    pool_size=10,
-    max_overflow=20,
+    pool_pre_ping=True,
 )
 
-# ====================== Session ======================
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -39,7 +39,6 @@ AsyncSessionLocal = sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """依赖注入使用的异步数据库会话"""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -49,23 +48,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 # ====================== 初始化 ======================
 async def init_db() -> None:
-    """创建所有表（开发/测试使用）"""
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
 async def drop_db() -> None:
-    """删除所有表（测试清理使用）"""
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
-
-
-# ====================== 健康检查 ======================
-async def check_db_connection() -> bool:
-    """数据库连接健康检查"""
-    try:
-        async with AsyncSessionLocal() as session:
-            await session.execute("SELECT 1")
-        return True
-    except Exception:
-        return False
