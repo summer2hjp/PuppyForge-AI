@@ -15,7 +15,7 @@ from models import (
     InteractionResult, 
     PetTraits
 )
-from database import get_db, qdrant_client
+from database import get_db, get_qdrant_client
 from agents import (
     diagnosis_agent,
     growth_agent,
