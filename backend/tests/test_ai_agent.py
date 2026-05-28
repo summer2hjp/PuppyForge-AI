@@ -1,5 +1,5 @@
 import pytest
-from orchestrator import SwarmOrchestrator
+from agents.orchestrator import SwarmOrchestrator
 from agents import VisionAgent, DiagnosisAgent, MemoryAgent, TraitDriftAgent
 
 @pytest.fixture
