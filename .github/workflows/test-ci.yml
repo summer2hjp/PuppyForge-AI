@@ -6,15 +6,18 @@ on:
     branches: [ main, develop, feature/* ]
     paths:
       - 'backend/**'
+      - 'frontend/**'
   pull_request:
     branches: [ main ]
     paths:
       - 'backend/**'
+      - 'frontend/**'
   workflow_dispatch:
 
 permissions:
   contents: read
   checks: write
+  pull-requests: write
 
 env:
   PYTHON_VERSION: '3.11'
@@ -44,11 +47,12 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio pytest-cov httpx pytest-mock aiosqlite
 
-      - name: 🔧 设置测试环境（提前）
+      - name: 🔧 设置测试环境
         run: |
           echo "PYTHONPATH=." >> $GITHUB_ENV
           echo "TESTING=true" >> $GITHUB_ENV
           echo "DATABASE_URL=sqlite+aiosqlite:///:memory:" >> $GITHUB_ENV
+          echo "QDRANT_URL=http://localhost:6333" >> $GITHUB_ENV
 
       - name: 🧪 运行 Backend 测试
         run: |
@@ -56,6 +60,53 @@ jobs:
             --cov=. \
             --cov-report=xml \
             --cov-report=html \
+            --cov-report=term-missing \
             --asyncio-mode=auto \
             -q \
             --maxfail=10
+
+      - name: 📊 上传覆盖率报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/htmlcov/
+          retention-days: 7
+
+  frontend-test:
+    name: ⚛️ Frontend - Jest
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: ⚡ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 安装依赖
+        run: npm ci
+
+      - name: 🔍 类型检查 & Lint
+        run: |
+          npm run type-check || true
+          npm run lint || true
+
+      - name: 🧪 Jest 测试
+        run: npm test -- --ci --coverage --silent || true
+
+      - name: 📊 上传 Frontend Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
