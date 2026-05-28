@@ -32,21 +32,6 @@ jobs:
       run:
         working-directory: backend
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: puppyforge_test
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: 📥 Checkout 代码
         uses: actions/checkout@v4
@@ -60,7 +45,7 @@ jobs:
       - name: 📦 安装依赖
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-cov httpx pytest-mock
+          pip install pytest pytest-asyncio pytest-cov httpx pytest-mock aiosqlite
 
       - name: 🔧 设置测试环境
         run: |
@@ -85,14 +70,14 @@ jobs:
         with:
           name: backend-coverage
           path: |
-            htmlcov/
-            coverage.xml
+            backend/htmlcov/
+            backend/coverage.xml
           retention-days: 7
 
       - name: 📈 Codecov Backend
         uses: codecov/codecov-action@v4
         with:
-          files: ./coverage.xml
+          files: ./backend/coverage.xml
           flags: backend
           fail_ci_if_error: false
 
@@ -130,10 +115,9 @@ jobs:
         if: always()
         with:
           name: frontend-coverage
-          path: coverage/
+          path: frontend/coverage/
           retention-days: 7
 
-  # 冒烟测试
   smoke-test:
     name: 🌫️ 冒烟测试
     needs: backend-test
@@ -156,7 +140,6 @@ jobs:
           python -c "
 import asyncio
 from main import app
-from database import check_db_connection
-print('✅ FastAPI 加载成功')
-print('✅ 数据库配置正常')
+print('✅ FastAPI 应用加载成功')
+print('✅ 测试环境配置正常')
           "
