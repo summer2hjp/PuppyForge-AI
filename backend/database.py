@@ -1,77 +1,71 @@
-from sqlalchemy import create_engine
+# backend/database.py
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
-import logging
+from typing import AsyncGenerator
 
-from config import settings
+# ====================== 配置 ======================
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-logger = logging.getLogger("puppyforge.database")
+# 测试环境自动切换到 SQLite（解决 async driver 问题）
+if os.getenv("TESTING") or not DATABASE_URL:
+    DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+    echo_sql = True
+else:
+    # 生产环境建议使用 asyncpg
+    if DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    echo_sql = False
 
-# ==================== 同步引擎（用于 Alembic） ====================
-engine = create_engine(settings.SYNC_DATABASE_URL, echo=settings.ENVIRONMENT == "development")
-
-# ==================== 异步引擎 ====================
-async_engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.ENVIRONMENT == "development",
+# ====================== 引擎创建 ======================
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=echo_sql,
     future=True,
-    pool_pre_ping=True,
+    pool_pre_ping=True,           # 防止连接断开
     pool_size=10,
-    max_overflow=20
+    max_overflow=20,
 )
 
+# ====================== Session ======================
 AsyncSessionLocal = sessionmaker(
-    async_engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
-)
-
-# 兼容测试和旧代码的同步会话/基类导出
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = SQLModel
-
-# ==================== Qdrant ====================
-from qdrant_client import QdrantClient
-
-qdrant_client = QdrantClient(
-    url=settings.QDRANT_URL,
-    api_key=settings.QDRANT_API_KEY,
-    timeout=10
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
 )
 
 
-def get_db():
-    """同步会话生成器（兼容当前代码）"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-async def get_async_db():
-    """异步会话生成器"""
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """依赖注入使用的异步数据库会话"""
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
-async def init_db():
-    """初始化数据库表"""
-    async with async_engine.begin() as conn:
+# ====================== 初始化 ======================
+async def init_db() -> None:
+    """创建所有表（开发/测试使用）"""
+    async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-    logger.info("数据库表初始化完成")
 
 
-async def init_qdrant():
-    """初始化 Qdrant 集合"""
+async def drop_db() -> None:
+    """删除所有表（测试清理使用）"""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
+
+
+# ====================== 健康检查 ======================
+async def check_db_connection() -> bool:
+    """数据库连接健康检查"""
     try:
-        collections = qdrant_client.get_collections().collections
-        if not any(c.name == "puppy_memories" for c in collections):
-            qdrant_client.create_collection(
-                collection_name="puppy_memories",
-                vectors_config={"size": 1536, "distance": "Cosine"}
-            )
-            logger.info("Qdrant 记忆集合创建成功")
-    except Exception as e:
-        logger.error(f"Qdrant 初始化失败: {e}")
+        async with AsyncSessionLocal() as session:
+            await session.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
