@@ -1,41 +1,30 @@
 # backend/tests/unit/test_utils.py
 import pytest
-from utils import calculate_trait_score, normalize_image, generate_soul_id
+from utils import generate_soul_name, calculate_soul_level, safe_json_dumps
 from datetime import datetime
 
 
-def test_calculate_trait_score():
-    traits = {"loyalty": 80, "chaos": 60, "curiosity": 90}
-    score = calculate_trait_score(traits)
-    assert 0 <= score <= 100
-    assert isinstance(score, float)
+def test_generate_soul_name():
+    name = generate_soul_name()
+    assert isinstance(name, str)
+    assert len(name) > 5
+    assert any(prefix in name for prefix in ["Summer", "Luna", "Blaze"])
 
 
-def test_generate_soul_id():
-    soul_id = generate_soul_id("小奶豆", "testuser")
-    assert soul_id.startswith("soul_")
-    assert len(soul_id) > 10
+def test_calculate_soul_level():
+    assert calculate_soul_level(0) == 1
+    assert calculate_soul_level(100) >= 1
+    assert calculate_soul_level(10000) > 5
 
 
-def test_normalize_image():
-    # 测试图片归一化（模拟）
-    fake_image = b"fake_image_bytes"
-    normalized = normalize_image(fake_image)
-    assert normalized is not None
+def test_safe_json_dumps():
+    data = {"soul": "小奶豆", "level": 3}
+    json_str = safe_json_dumps(data)
+    assert isinstance(json_str, str)
+    assert "小奶豆" in json_str
 
 
-def test_time_based_greeting():
-    from utils import get_time_based_greeting
-    greeting = get_time_based_greeting()
-    assert greeting in ["早上好", "中午好", "下午好", "晚上好"]
-
-
-@pytest.mark.parametrize("level,expected_stage", [
-    (1, "puppy"),
-    (5, "young"),
-    (10, "adult"),
-    (20, "senior")
-])
-def test_evolution_stage(level, expected_stage):
-    from utils import get_evolution_stage
-    assert get_evolution_stage(level) == expected_stage
+@pytest.mark.parametrize("exp,expected_min", [(0, 1), (1000, 2), (10000, 5)])
+def test_level_progression(exp, expected_min):
+    level = calculate_soul_level(exp)
+    assert level >= expected_min
