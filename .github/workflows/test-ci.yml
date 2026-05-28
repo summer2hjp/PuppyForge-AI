@@ -54,6 +54,7 @@ jobs:
           echo "QDRANT_URL=http://localhost:6333" >> $GITHUB_ENV
 
       - name: 🧪 运行 Backend 测试
+        working-directory: .
         run: |
           pytest tests/ \
             --cov=. \
