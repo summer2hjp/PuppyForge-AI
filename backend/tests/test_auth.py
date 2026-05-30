@@ -32,21 +32,16 @@ def test_create_access_token():
 
 @pytest.mark.asyncio
 async def test_get_current_user_valid(client, test_db):
-    # 先创建测试用户 - 使用 SQLModel 的 create 方法
-    from sqlmodel import Session as SyncSession
-    
-    # 由于 test_db 是异步会话，我们需要用同步方式添加数据
-    # 或者直接使用 sync_session
-    with SyncSession(engine) as session:
-        user = User(
-            id="testuser123",
-            email="test@puppyforge.ai",
-            hashed_password=get_password_hash("testpass"),
-            is_active=True,
-        )
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+    # 先创建测试用户 - 使用传入的 test_db session
+    user = User(
+        id="testuser123",
+        email="test@puppyforge.ai",
+        hashed_password=get_password_hash("testpass"),
+        is_active=True,
+    )
+    test_db.add(user)
+    test_db.commit()
+    test_db.refresh(user)
 
     token = create_access_token({"sub": "testuser123"})
     
