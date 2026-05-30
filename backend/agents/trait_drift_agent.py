@@ -33,3 +33,30 @@ class TraitDriftAgent(BaseAgent):
             "new_traits": soul.traits.model_dump(),
             "fuel_consumed": self.fuel_consumption
         }
+
+    async def predict_drift(self, current_traits: Dict[str, float], recent_events: list) -> Dict[str, Any]:
+        """预测特质漂移（供测试使用）"""
+        # 根据事件计算漂移
+        predicted_changes = {}
+        for event in recent_events:
+            if "exercise" in event.lower():
+                predicted_changes["energy"] = predicted_changes.get("energy", 0) + 0.1
+            elif "stress" in event.lower():
+                predicted_changes["calmness"] = predicted_changes.get("calmness", 0) - 0.05
+            elif "social" in event.lower():
+                predicted_changes["loyalty"] = predicted_changes.get("loyalty", 0) + 0.05
+        
+        # 应用变化到当前特质
+        predicted_traits = current_traits.copy()
+        for trait, change in predicted_changes.items():
+            if trait in predicted_traits:
+                predicted_traits[trait] = max(0, min(1, predicted_traits[trait] + change))
+        
+        # 计算漂移幅度
+        drift_magnitude = sum(abs(v) for v in predicted_changes.values())
+        
+        return {
+            "predicted_traits": predicted_traits,
+            "drift_magnitude": drift_magnitude,
+            "predicted_changes": predicted_changes
+        }

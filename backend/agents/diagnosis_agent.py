@@ -39,3 +39,24 @@ class DiagnosisAgent(BaseAgent):
             "confidence": confidence,
             "suggestions": ["保持当前互动频率", "定期记录行为数据"]
         }
+
+    async def generate_report(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+        """生成诊断报告（供测试使用）"""
+        traits = analysis_data.get("traits", [])
+        health_score = analysis_data.get("health_score", 50)
+        
+        # 根据特质计算风险等级
+        risk_level = "low"
+        if "anxious" in traits or health_score < 50:
+            risk_level = "medium"
+        if health_score < 30:
+            risk_level = "high"
+        
+        return {
+            "soul_traits": traits,
+            "risk_level": risk_level,
+            "drift_prediction": {
+                "predicted_changes": {"energy": 0.05, "loyalty": 0.02},
+                "confidence": 0.78
+            }
+        }

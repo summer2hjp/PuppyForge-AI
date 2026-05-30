@@ -1,8 +1,29 @@
+```
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.*
+.venv.bak/
+.venv_old/
+.venv_old_*/
+
+# Testing
+.coverage
+coverage/
+htmlcov/
+.nox/
+.tox/
+.pytest_cache/
+.hypothesis/
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -20,23 +41,6 @@ wheels/
 .installed.cfg
 *.egg
 
-# Testing
-.coverage
-htmlcov/
-.tox/
-.nox/
-coverage.xml
-*.cover
-.hypothesis/
-
-# Virtual Environment
-venv/
-ENV/
-env/
-.venv/
-.env/
-ENV/
-
 # IDE
 .vscode/
 .idea/
@@ -44,14 +48,15 @@ ENV/
 *.swo
 *.tmp
 
-# OS
-.DS_Store
-Thumbs.db
+# Environment
+.env
+.env.local
+.env.*
 
 # Logs
 *.log
 
-# Environment variables
-.env
-.env.local
-*.env.*
+# OS
+.DS_Store
+Thumbs.db
+```
