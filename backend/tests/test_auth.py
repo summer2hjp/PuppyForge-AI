@@ -11,6 +11,7 @@ from auth import (
     get_current_user,
 )
 from models.auth import UserCreate, User
+from config import settings
 
 
 def test_password_hashing():
