@@ -41,8 +41,15 @@ class PetMemory(SQLModel, table=True):
     # ✅ 重命名：metadata → extra_data
     extra_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
     
-    # 关系 - 使用字符串前向引用
-    soul: "PuppySoul" = Relationship(back_populates="memories")
+    # 关系 - 使用字符串引用，由 SQLModel 在运行时解析
+    soul: "PuppySoul" = Relationship(
+        back_populates="memories",
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
+
+
+# 前向声明供 PuppySoul 使用
+PetMemoryRef = PetMemory
 
 
 class EvolutionStage(SQLModel, table=True):
@@ -71,12 +78,14 @@ class PuppySoul(SQLModel, table=True):
     soul_fuel: float = Field(default=100.0)
     rebellion_score: float = Field(default=0.0, ge=0.0)
     
-    # 外键关系
+    # 外键关系 - 使用字符串引用避免循环依赖
     owner_id: Optional[str] = Field(default=None, foreign_key="users.id", index=True)
-    owner: Optional["User"] = Relationship(back_populates="souls")
+    owner: "User" = Relationship(  # type: ignore[name-defined]
+        back_populates="souls"
+    )
     
-    # 一对多关系
-    memories: List["PetMemory"] = Relationship(
+    # 一对多关系 - 使用已定义的 PetMemoryRef
+    memories: PetMemoryRef = Relationship(  # type: ignore[misc]
         back_populates="soul",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )

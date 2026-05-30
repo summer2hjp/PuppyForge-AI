@@ -1,62 +1,21 @@
-```
+```gitignore
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
+
+# Dependencies
 .venv/
-.ENV
-.ENV.*
-.venv.bak/
-.venv_old/
-.venv_old_*/
+venv/
+env/
+requirements.txt.bak
 
-# Testing
-.coverage
-coverage/
-htmlcov/
-.nox/
-.tox/
-.pytest_cache/
-.hypothesis/
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
+# Logs
+*.log
 
 # Environment
 .env
 .env.local
 .env.*
-
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
 ```
