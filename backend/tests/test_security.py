@@ -2,7 +2,7 @@ import pytest
 from auth import create_access_token
 
 @pytest.mark.asyncio
-class TestSecurity 系统测试:
+class TestSecurity:
 
     async def test_sql_injection_prevention(self, client):
         """SQL 注入防护测试"""
