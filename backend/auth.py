@@ -10,8 +10,6 @@ from config import settings
 from models.auth import User, UserRead, UserCreate, UserRole
 from database import get_db
 from sqlmodel import Session, select, SQLModel
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select as async_select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -37,7 +35,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """获取当前用户"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -52,8 +50,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     except JWTError:
         raise credentials_exception
 
-    result = await db.execute(async_select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    result = db.exec(select(User).where(User.id == user_id))
+    user = result.first()
     if user is None or not user.is_active:
         raise credentials_exception
     return user
@@ -69,13 +67,13 @@ def require_role(required_role: UserRole):
 
 
 @router.post("/login")
-async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def login(form_data: UserCreate, db: Session = Depends(get_db)):
     """用户登录（邮箱密码）"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
-    result = await db.execute(async_select(User).where(User.email == form_data.email))
-    user = result.scalar_one_or_none()
+    result = db.exec(select(User).where(User.email == form_data.email))
+    user = result.first()
     
     if not user or not user.hashed_password:
         raise HTTPException(
@@ -101,14 +99,14 @@ async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/register")
-async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(form_data: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
     # 检查邮箱是否已存在
-    result = await db.execute(async_select(User).where(User.email == form_data.email))
-    existing_user = result.scalar_one_or_none()
+    result = db.exec(select(User).where(User.email == form_data.email))
+    existing_user = result.first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -124,8 +122,8 @@ async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     )
     
     db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    db.commit()
+    db.refresh(new_user)
     
     access_token = create_access_token(data={"sub": new_user.id})
     
@@ -141,6 +139,17 @@ async def logout(current_user: User = Depends(get_current_user)):
     """用户登出（可在黑名单中记录 token）"""
     # TODO: 实现 token 黑名单机制
     return {"message": "已成功登出"}
+
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    """获取当前用户信息"""
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "role": current_user.role.value,
+        "is_active": current_user.is_active
+    }
 
 
 @router.post("/refresh")

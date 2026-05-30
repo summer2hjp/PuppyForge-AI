@@ -7,6 +7,8 @@ __pycache__/
 
 # Testing
 .pytest_cache/
+.coverage
+coverage/
 
 # Logs
 *.log
@@ -19,20 +21,4 @@ __pycache__/
 # Dependencies
 .venv/
 venv/
-node_modules/
-
-# Build artifacts
-dist/
-build/
-target/
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
 ```

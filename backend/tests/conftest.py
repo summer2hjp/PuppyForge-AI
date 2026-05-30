@@ -43,11 +43,20 @@ def test_db():
 
 
 @pytest.fixture
-def client():
-    """创建测试客户端"""
+def client(test_db):
+    """创建测试客户端，使用测试数据库会话"""
     from main import app
+    from database import get_db
+    
+    def override_get_db():
+        yield test_db
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
     with TestClient(app) as c:
         yield c
+    
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

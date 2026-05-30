@@ -2,30 +2,42 @@
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel
-from typing import AsyncGenerator
+from sqlmodel import SQLModel, Session
+from sqlalchemy import create_engine as sync_create_engine
+from typing import AsyncGenerator, Generator
 
 # ====================== 配置 ======================
 TESTING = os.getenv("TESTING", "false").lower() == "true"
 
 if TESTING:
     DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+    SYNC_DATABASE_URL = "sqlite:///:memory:"
     echo_sql = True
     print("🧪 测试模式 - 使用 SQLite 内存数据库")
 else:
     DATABASE_URL = os.getenv("DATABASE_URL")
     if not DATABASE_URL:
         DATABASE_URL = "sqlite+aiosqlite:///:memory:"  # 兜底
+    SYNC_DATABASE_URL = DATABASE_URL.replace("+aiosqlite", "").replace("+asyncpg", "")
     if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
     echo_sql = False
 
 # ====================== SQLAlchemy 引擎 ======================
+# 异步引擎
 engine = create_async_engine(
     DATABASE_URL,
     echo=echo_sql,
     future=True,
     pool_pre_ping=True,
+)
+
+# 同步引擎（用于测试）
+sync_engine = sync_create_engine(
+    SYNC_DATABASE_URL,
+    echo=echo_sql,
+    future=True,
+    connect_args={"check_same_thread": False} if "sqlite" in SYNC_DATABASE_URL else {},
 )
 
 AsyncSessionLocal = sessionmaker(
@@ -40,6 +52,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
+
+def get_sync_db() -> Generator[Session, None, None]:
+    """同步数据库会话（用于测试）"""
+    session = Session(sync_engine)
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 # ====================== Qdrant 客户端（新增） ======================
