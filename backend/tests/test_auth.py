@@ -53,8 +53,17 @@ async def test_get_current_user_valid(client, test_db):
     assert response.status_code == 200
 
 
-def test_login_success(client):
+def test_login_success(client, test_db):
     # 创建用户
+    user = User(
+        id="testuser456",
+        email="test@puppyforge.ai",
+        hashed_password=get_password_hash("testpass"),
+        is_active=True,
+    )
+    test_db.add(user)
+    test_db.commit()
+    
     response = client.post(
         "/auth/login",
         json={"email": "test@puppyforge.ai", "password": "testpass"}
@@ -63,9 +72,19 @@ def test_login_success(client):
     assert response.status_code in [200, 201]
 
 
-def test_login_invalid_password(client):
+def test_login_invalid_password(client, test_db):
+    # 先创建用户
+    user = User(
+        id="testuser789",
+        email="test2@puppyforge.ai",
+        hashed_password=get_password_hash("testpass"),
+        is_active=True,
+    )
+    test_db.add(user)
+    test_db.commit()
+    
     response = client.post(
         "/auth/login",
-        json={"email": "test@puppyforge.ai", "password": "wrong"}
+        json={"email": "test2@puppyforge.ai", "password": "wrong"}
     )
     assert response.status_code == 401
