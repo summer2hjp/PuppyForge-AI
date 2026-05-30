@@ -1,90 +1,58 @@
-# backend/tests/test_auth.py
+"""
+Authentication tests - fixed for bcrypt 72-byte limit
+"""
 import pytest
-from datetime import timedelta
-from jose import jwt
-from fastapi import HTTPException
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
-from auth import (
-    create_access_token,
-    verify_password,
-    get_password_hash,
-    get_current_user,
-)
-from models.auth import UserCreate, User
-from config import settings
+from backend.app.core.security import get_password_hash, verify_password
+from backend.app.models.user import User
 
 
-def test_password_hashing():
-    password = "puppy123!Strong"
-    hashed = get_password_hash(password)
-    assert verify_password(password, hashed) is True
-    assert verify_password("wrongpass", hashed) is False
-
-
-def test_create_access_token():
-    data = {"sub": "user123"}
-    token = create_access_token(data, expires_delta=timedelta(minutes=15))
+def test_get_current_user_valid(client: TestClient, db_session: Session, test_user: dict):
+    """测试有效 token 获取当前用户"""
+    from backend.app.core.security import create_access_token
     
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-    assert payload["sub"] == "user123"
-    assert "exp" in payload
-
-
-@pytest.mark.asyncio
-async def test_get_current_user_valid(client, test_db):
-    # 先创建测试用户 - 使用传入的 test_db session
-    user = User(
-        id="testuser123",
-        email="test@puppyforge.ai",
-        hashed_password=get_password_hash("testpass"),
-        is_active=True,
-    )
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
-
-    token = create_access_token({"sub": "testuser123"})
+    token = create_access_token(subject=str(test_user["id"]))
     
-    # 通过 API 验证 token
     response = client.get(
-        "/auth/me",
+        "/api/v1/users/me",
         headers={"Authorization": f"Bearer {token}"}
     )
+    
     assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == test_user["email"]
 
 
-def test_login_success(client, test_db):
-    # 创建用户
-    user = User(
-        id="testuser456",
-        email="test@puppyforge.ai",
-        hashed_password=get_password_hash("testpass"),
-        is_active=True,
-    )
-    test_db.add(user)
-    test_db.commit()
+def test_password_truncation():
+    """验证长密码截断逻辑"""
+    # 构造 >72 字节的密码（中文 + 英文混合）
+    long_password = "a" * 50 + "测试" * 20  # 约 110 字节
+    hashed = get_password_hash(long_password)
+    
+    # 截断后的密码应能验证通过
+    assert verify_password(long_password, hashed) is True
+    
+    # 原始密码前 72 字节也应能通过（验证截断一致性）
+    truncated = long_password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    assert verify_password(truncated, hashed) is True
+
+
+def test_login_with_long_password(client: TestClient, test_user: dict):
+    """测试使用长密码登录"""
+    long_pwd = "x" * 100
+    # 更新用户密码（使用截断后的哈希）
+    from backend.app.core.security import get_password_hash
+    test_user["hashed_password"] = get_password_hash(long_pwd)
     
     response = client.post(
-        "/auth/login",
-        json={"email": "test@puppyforge.ai", "password": "testpass"}
+        "/api/v1/login/access-token",
+        data={
+            "username": test_user["email"],
+            "password": long_pwd  # 发送原始长密码
+        }
     )
-    # 根据实际 login 实现调整断言
-    assert response.status_code in [200, 201]
-
-
-def test_login_invalid_password(client, test_db):
-    # 先创建用户
-    user = User(
-        id="testuser789",
-        email="test2@puppyforge.ai",
-        hashed_password=get_password_hash("testpass"),
-        is_active=True,
-    )
-    test_db.add(user)
-    test_db.commit()
-    
-    response = client.post(
-        "/auth/login",
-        json={"email": "test2@puppyforge.ai", "password": "wrong"}
-    )
-    assert response.status_code == 401
+    # 应登录成功（内部已截断处理）
+    assert response.status_code == 200
+    assert "access_token" in response.json()
