@@ -11,11 +11,11 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from api.v1.auth import router as auth_router
-from api.v1.vision import router as vision_router
-from api.v1.interactions import router as interact_router
-from api.v1.souls import router as soul_router
-from api.v1.websocket import ws_router
+from auth import router as auth_router
+from vision import router as vision_router
+from interactions import router as interact_router
+from souls import router as soul_router
+from websocket import ws_router
 from database import init_db, get_db, engine
 from utils.security import verify_token
 from utils.middleware import add_security_headers
