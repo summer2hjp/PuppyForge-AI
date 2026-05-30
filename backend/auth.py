@@ -19,16 +19,20 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # 安全截断至 72 字节
-    pwd_bytes = plain_password.encode('utf-8')
-    truncated = pwd_bytes[:72].decode('utf-8', errors='ignore')
-    return pwd_context.verify(truncated, hashed_password)
+    """验证密码"""
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    pwd_bytes = password.encode('utf-8')
-    truncated = pwd_bytes[:72].decode('utf-8', errors='ignore')
-    return pwd_context.hash(truncated)
+    """生成密码哈希"""
+    # bcrypt has a 72-byte limit, truncate if necessary
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Truncate to 72 bytes and decode back to string
+        truncated_bytes = password_bytes[:72]
+        # Decode with errors='ignore' to handle partial UTF-8 characters
+        password = truncated_bytes.decode('utf-8', errors='ignore')
+    return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
