@@ -1,5 +1,5 @@
 import pytest
-from orchestrator import SwarmOrchestrator
+from agents.orchestrator import SwarmOrchestrator
 
 @pytest.mark.asyncio
 async def test_swarm_orchestrator_parallel_agents():
