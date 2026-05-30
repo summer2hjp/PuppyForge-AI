@@ -1,7 +1,7 @@
 # backend/tests/conftest.py
 import pytest
 import asyncio
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 
 # 全局 Mock 避免导入错误
@@ -32,3 +32,10 @@ def orchestrator():
     """SwarmOrchestrator 测试夹具"""
     from agents.orchestrator import SwarmOrchestrator
     return SwarmOrchestrator()
+
+
+@pytest.fixture
+def mock_analyze_image():
+    """mock analyze_pet_image 的夹具"""
+    with patch('vision.analyze_pet_image', new_callable=AsyncMock) as mock:
+        yield mock
