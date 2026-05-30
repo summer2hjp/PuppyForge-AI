@@ -17,10 +17,10 @@ pytest_plugins = ["pytest_asyncio"]
 @pytest.fixture(autouse=True)
 def mock_external_services():
     with patch('database.get_qdrant_client') as mock_qdrant, \
-         patch('orchestrator.SoulOrchestrator') as mock_orch:
+         patch('agents.orchestrator.SwarmOrchestrator') as mock_orch:
         
         mock_qdrant.return_value = MagicMock()
-        mock_orch.return_value.interact = MagicMock()
+        mock_orch.return_value.run_full_diagnosis = AsyncMock()
         
         yield
 
