@@ -53,3 +53,4 @@ pipeline
 tenacity
 wasmtime
 email-validator>=2.1.0
+aiosqlite
