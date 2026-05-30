@@ -4,7 +4,11 @@ import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel
-from database import engine, AsyncSessionLocal
+from sqlalchemy import create_engine as sync_create_engine
+from sqlmodel import Session as SyncSession
+
+# 创建同步引擎用于测试（全局共享）
+sync_test_engine = sync_create_engine("sqlite:///:memory:", echo=False, connect_args={"check_same_thread": False})
 
 # 全局 Mock 避免导入错误
 pytest_plugins = ["pytest_asyncio"]
@@ -21,17 +25,21 @@ def mock_external_services():
         yield
 
 
-@pytest.fixture
-async def test_db():
-    """创建测试数据库会话"""
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+@pytest.fixture(scope="function")
+def test_db():
+    """创建测试数据库会话（同步版本）"""
+    # 导入模型以确保它们被注册到 SQLModel.metadata
+    from models.auth import User  # noqa: F401
+    from models.models import PuppySoul, InteractionResult  # noqa: F401
     
-    async with AsyncSessionLocal() as session:
+    # 创建所有表
+    SQLModel.metadata.create_all(sync_test_engine)
+    
+    with SyncSession(sync_test_engine) as session:
         yield session
     
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+    # 清理所有表
+    SQLModel.metadata.drop_all(sync_test_engine)
 
 
 @pytest.fixture
