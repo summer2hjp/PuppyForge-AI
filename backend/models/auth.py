@@ -15,11 +15,6 @@ class UserRole(str, Enum):
     SUPERADMIN = "superadmin"
 
 
-# 延迟导入以避免循环依赖
-if TYPE_CHECKING:
-    PuppySoul = None  # type: ignore
-
-
 class User(SQLModel, table=True):
     """用户模型"""
     __tablename__ = "users"  # 可选，指定表名
@@ -35,7 +30,7 @@ class User(SQLModel, table=True):
     google_id: Optional[str] = Field(default=None, unique=True)
     github_id: Optional[str] = Field(default=None, unique=True)
     
-    # 关系 - 使用字符串前向引用（SQLModel 会在运行时解析）
+    # 关系 - 使用字符串前向引用（SQLModel/SQLAlchemy 会在运行时解析）
     souls: "PuppySoul" = Relationship(
         back_populates="owner",
         sa_relationship_kwargs={"lazy": "selectin"}
