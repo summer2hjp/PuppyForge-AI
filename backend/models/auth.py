@@ -7,15 +7,17 @@ from typing import Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import BaseModel, EmailStr
 
-if TYPE_CHECKING:
-    from .puppy import PuppySoul  # 根据你的实际路径调整
-
 
 class UserRole(str, Enum):
     """用户角色枚举"""
     USER = "user"
     ADMIN = "admin"
     SUPERADMIN = "superadmin"
+
+
+# 延迟导入以避免循环依赖
+if TYPE_CHECKING:
+    PuppySoul = None  # type: ignore
 
 
 class User(SQLModel, table=True):
@@ -33,8 +35,11 @@ class User(SQLModel, table=True):
     google_id: Optional[str] = Field(default=None, unique=True)
     github_id: Optional[str] = Field(default=None, unique=True)
     
-    # 关系
-    souls: list[PuppySoul] = Relationship(back_populates="owner")
+    # 关系 - 使用字符串前向引用（SQLModel 会在运行时解析）
+    souls: "PuppySoul" = Relationship(
+        back_populates="owner",
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
     
     class Config:
         """Pydantic 配置"""
