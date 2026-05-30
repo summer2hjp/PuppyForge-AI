@@ -3,7 +3,7 @@ name: 🔥 PuppyForge-AI 测试 CI 流水线
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main ]
     paths:
       - 'backend/**'
       - 'frontend/**'
