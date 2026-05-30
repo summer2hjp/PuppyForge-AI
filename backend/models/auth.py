@@ -1,102 +1,69 @@
-from __future__ import annotations
+import uuid
+from datetime import datetime, timezone
+from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
-from uuid import uuid4
-from datetime import datetime
-from typing import Optional, TYPE_CHECKING
 
-from sqlmodel import SQLModel, Field, Relationship
-from pydantic import BaseModel, EmailStr
+from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column, String, DateTime, Boolean, Integer, Text
+from sqlalchemy.orm import relationship
+
+# 防止循环导入
+if TYPE_CHECKING:
+    from models.soul import PuppySoul
+    from models.interaction import Interaction
+    from models.diagnosis import Diagnosis
 
 
 class UserRole(str, Enum):
     """用户角色枚举"""
     USER = "user"
     ADMIN = "admin"
-    SUPERADMIN = "superadmin"
+    SUPER_ADMIN = "super_admin"
 
 
-class User(SQLModel, table=True):
-    """用户模型"""
-    __tablename__ = "users"  # 可选，指定表名
-    
-    id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True)
-    email: EmailStr = Field(unique=True, index=True)
-    hashed_password: Optional[str] = None
-    is_active: bool = True
-    role: UserRole = Field(default=UserRole.USER)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # OAuth 信息
-    google_id: Optional[str] = Field(default=None, unique=True)
-    github_id: Optional[str] = Field(default=None, unique=True)
-    
-    # 关系 - 暂时移除 souls 关系以避免循环依赖
-    # souls: Optional["PuppySoul"] = Relationship(
-    #     back_populates="owner",
-    #     sa_relationship_kwargs={"lazy": "selectin"}
-    # )
-    
-    class Config:
-        """Pydantic 配置"""
-        arbitrary_types_allowed = False  # 保持严格模式
-        json_schema_extra = {
-            "example": {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "email": "user@example.com",
-                "is_active": True,
-                "role": "user",
-            }
-        }
+class UserBase(SQLModel):
+    """用户基础模型"""
+    email: str = Field(..., unique=True, index=True, max_length=255, description="邮箱地址")
+    role: UserRole = Field(default=UserRole.USER, description="用户角色")
+    is_active: bool = Field(default=True, description="是否激活")
+    is_verified: bool = Field(default=False, description="邮箱是否验证")
+    full_name: Optional[str] = Field(None, max_length=100, description="全名")
+    avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
 
 
-class UserCreate(BaseModel):
-    """创建用户请求模型"""
-    email: EmailStr
-    password: Optional[str] = None
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "email": "user@example.com",
-                "password": "strongpassword123",
-            }
-        }
+class UserCreate(SQLModel):
+    """用户注册/创建请求模型"""
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=6, max_length=72, description="密码 (6-72字符)")
+    full_name: Optional[str] = None
 
 
-class UserRead(BaseModel):
-    """用户信息响应模型"""
-    id: str
-    email: EmailStr
-    role: UserRole
-    is_active: bool
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "email": "user@example.com",
-                "role": "user",
-                "is_active": True,
-            }
-        }
+class UserRead(UserBase):
+    """用户响应模型 (不包含敏感信息)"""
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
-class UserUpdate(BaseModel):
-    """更新用户请求模型（可选）"""
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
+class UserUpdate(SQLModel):
+    """用户更新请求模型"""
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     is_active: Optional[bool] = None
-    role: Optional[UserRole] = None
 
 
-class Token(BaseModel):
-    """JWT Token 响应模型"""
-    access_token: str
-    token_type: str = "bearer"
+class User(UserBase, table=True):
+    """用户数据库模型"""
+    __tablename__ = "users"
+    
+    id: int = Field(default_factory=lambda: uuid.uuid4().int >> 96, primary_key=True, description="用户ID (UUID缩短版)")
+    # 或者使用自增ID: id: Optional[int] = Field(default=None, primary_key=True)
+    
+    hashed_password: str = Field(..., sa_column=Column(String(255)), description="加密后的密码")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(None, sa_column=Column(DateTime, onupdate=lambda: datetime.now(timezone.utc)))
 
-
-class TokenData(BaseModel):
-    """Token 数据模型"""
-    email: Optional[str] = None
-    user_id: Optional[str] = None
-    role: Optional[UserRole] = None
+    # --- 反向关系定义 (用于级联查询) ---
+    souls: List["PuppySoul"] = Relationship(back_populates="user", cascade_delete=True)
+    interactions: List["Interaction"] = Relationship(back_populates="user", cascade_delete=True)
+    diagnoses: List["Diagnosis"] = Relationship(back_populates="user", cascade_delete=True)
