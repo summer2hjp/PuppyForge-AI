@@ -1,41 +1,81 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
-import asyncio
 import logging
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from sqlmodel import select
-from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
-from auth import router as auth_router, get_current_user
-from models.auth import User
-from orchestrator import SoulOrchestrator
-from models import ErrorResponse, InteractionResult, PuppySoul
-from database import get_db
-from sqlmodel import Session
+from core.config import settings
+from api.v1.auth import router as auth_router
+from api.v1.vision import router as vision_router
+from api.v1.interactions import router as interact_router
+from api.v1.souls import router as soul_router
+from api.v1.websocket import ws_router
+from database import init_db, get_db, engine
+from utils.security import verify_token
+from utils.middleware import add_security_headers
+from utils.exceptions import setup_global_exception_handlers
 
-# ==================== 日志 ====================
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("puppyforge")
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO if settings.DEBUG else logging.WARNING,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
+# 初始化速率限制器
 limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info(f"🐾 {settings.PROJECT_NAME} v{settings.VERSION} 已启动 | Auth + Security 就绪")
+async def lifespan(app: FastAPI) -> AsyncGenerator:
+    """
+    应用生命周期管理
+    启动时初始化数据库连接和表结构
+    关闭时清理资源
+    """
+    logger.info("🚀 Starting up AI Soul Backend...")
+    try:
+        # 异步初始化数据库表
+        await init_db()
+        logger.info("✅ Database initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {e}")
+        raise
+    
     yield
-    logger.info("👋 PuppyForge 已安全关闭")
+    
+    logger.info("🛑 Shutting down AI Soul Backend...")
+    # 关闭数据库引擎连接
+    await engine.dispose()
+    logger.info("✅ Database connections closed")
 
-app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION, lifespan=lifespan)
+# 创建 FastAPI 应用实例
+app = FastAPI(
+    title="AI Soul Backend",
+    description="AI Soul Backend API Documentation (Async Version)",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None
+)
+
+# 注册速率限制异常处理器
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# ==================== CORS ====================
+# 添加安全头部中间件
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    response = await call_next(request)
+    return await add_security_headers(request, response)
+
+# CORS 中间件配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -44,220 +84,105 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==================== 全局异常 ====================
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"未捕获异常：{exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content=ErrorResponse(message="灵魂引擎异常", detail="请稍后重试").model_dump()
-    )
+# 全局异常处理
+setup_global_exception_handlers(app)
 
-# ==================== 依赖 ====================
-orchestrator = SoulOrchestrator()
+# 安全令牌验证依赖
+security = HTTPBearer()
 
-def get_orchestrator():
-    return orchestrator
+async def verify_api_key(credentials: HTTPBearer = Depends(security)) -> str:
+    """异步 API 密钥验证依赖"""
+    token = credentials.credentials
+    if not verify_token(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return token
 
+@app.get("/health", tags=["Health"])
+@limiter.limit("10/minute")
+async def health_check(request: Request) -> dict:
+    """异步健康检查端点"""
+    try:
+        # 获取异步数据库会话并测试连接
+        db_gen = get_db()
+        db: AsyncSession = await db_gen.__anext__()
+        
+        # 执行简单的异步查询测试连接
+        from sqlalchemy import text
+        await db.execute(text("SELECT 1"))
+        
+        return {
+            "status": "healthy",
+            "version": "1.0.0",
+            "services": {
+                "database": "connected",
+                "redis": "configured" if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL else "not configured"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Service unhealthy: {str(e)}"
+        )
 
-async def verify_soul_ownership(soul_id: str, user_id: str, db: Session) -> bool:
-    """验证灵魂所有权"""
-    soul = db.exec(select(PuppySoul).where(PuppySoul.id == soul_id)).first()
-    if not soul:
-        return False
-    # 允许无主灵魂或当前用户拥有的灵魂
-    return soul.owner_id is None or soul.owner_id == user_id
+# 包含各个路由器 (所有路由现在都是异步的)
+app.include_router(
+    auth_router,
+    prefix="/api/v1/auth",
+    tags=["Authentication"],
+    dependencies=[Depends(verify_api_key)]
+)
 
+app.include_router(
+    vision_router,
+    prefix="/api/v1/vision",
+    tags=["Vision Diagnosis"],
+    dependencies=[Depends(verify_api_key)]
+)
 
-# ==================== 路由 ====================
-# 添加 API 前缀以匹配前端调用
-app.include_router(auth_router, prefix="/api")
-app.include_router(auth_router)
+app.include_router(
+    interact_router,
+    prefix="/api/v1/interact",
+    tags=["Interactions"],
+    dependencies=[Depends(verify_api_key)]
+)
 
+app.include_router(
+    soul_router,
+    prefix="/api/v1/soul",
+    tags=["Soul Management"],
+    dependencies=[Depends(verify_api_key)]
+)
 
-@app.get("/health")
-async def health_check():
-    import time
-    return {
-        "status": "healthy",
-        "version": settings.VERSION,
-        "uptime": int(time.time())
-    }
-
+app.include_router(
+    ws_router,
+    prefix="/api/v1/ws",
+    tags=["Websocket"],
+    # WebSocket 通常有自己的认证机制，这里可选
+    # dependencies=[Depends(verify_api_key)] 
+)
 
 @app.get("/")
-@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
-async def root(request: Request):
-    _ = request
+async def root():
+    """根路径欢迎信息"""
     return {
-        "status": "running",
-        "project": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT
+        "message": "Welcome to AI Soul Backend API",
+        "docs": "/docs" if settings.DEBUG else "Disabled in production",
+        "version": "1.0.0"
     }
-
-
-# 注册视觉诊断路由
-from vision.soul_diagnosis import router as vision_router
-app.include_router(vision_router, prefix="/api")
-
-
-@app.post("/api/interact/{soul_id}", response_model=InteractionResult)
-@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
-async def interact(
-    request: Request,
-    soul_id: str,
-    payload: dict,
-    current_user: User = Depends(get_current_user),
-    orch: SoulOrchestrator = Depends(get_orchestrator),
-    db: Session = Depends(get_db)
-):
-    """与灵魂交互的核心接口"""
-    _ = request
-    if not await verify_soul_ownership(soul_id, current_user.id, db):
-        raise HTTPException(status_code=403, detail="权限不足：您不是该灵魂的主人")
-    
-    try:
-        result = await orch.interact(
-            soul_id=soul_id,
-            user_input=payload.get("user_input", ""),
-            visual_features=payload.get("visual_features"),
-            context=payload.get("context")
-        )
-        return result
-    except Exception as e:
-        logger.error(f"Interaction failed for soul {soul_id}: {e}")
-        raise HTTPException(status_code=500, detail="交互失败，请稍后重试")
-
-
-@app.get("/api/soul/{soul_id}")
-@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
-async def get_soul(
-    request: Request,
-    soul_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """获取灵魂状态"""
-    _ = request
-    if not await verify_soul_ownership(soul_id, current_user.id, db):
-        raise HTTPException(status_code=403, detail="权限不足")
-    
-    soul = db.exec(select(PuppySoul).where(PuppySoul.id == soul_id)).first()
-    if not soul:
-        raise HTTPException(status_code=404, detail="灵魂不存在")
-    
-    return soul
-
-
-@app.post("/api/evolve/{soul_id}")
-@limiter.limit(f"{settings.RATE_LIMIT_PER_MINUTE}/minute")
-async def evolve_soul(
-    request: Request,
-    soul_id: str,
-    current_user: User = Depends(get_current_user),
-    orch: SoulOrchestrator = Depends(get_orchestrator),
-    db: Session = Depends(get_db)
-):
-    """灵魂进化"""
-    _ = request
-    if not await verify_soul_ownership(soul_id, current_user.id, db):
-        raise HTTPException(status_code=403, detail="权限不足")
-    
-    # TODO: 实现进化逻辑
-    return {
-        "message": f"灵魂 {soul_id} 进化中...",
-        "status": "processing"
-    }
-
-
-# ==================== WebSocket ====================
-async def get_websocket_user(websocket: WebSocket, db: Session) -> User | None:
-    token = websocket.query_params.get("token")
-    if not token:
-        auth_header = websocket.headers.get("authorization", "")
-        if auth_header.lower().startswith("bearer "):
-            token = auth_header.split(" ", 1)[1].strip()
-    if not token:
-        return None
-
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        user_id = payload.get("sub")
-        if not user_id:
-            return None
-    except JWTError:
-        return None
-
-    user = db.exec(select(User).where(User.id == user_id)).first()
-    if user is None or not user.is_active:
-        return None
-    return user
-
-
-@app.websocket("/ws/soul/{soul_id}")
-async def soul_websocket(
-    websocket: WebSocket,
-    soul_id: str,
-    orch: SoulOrchestrator = Depends(get_orchestrator),
-    db: Session = Depends(get_db)
-):
-    """灵魂实时通信通道"""
-    current_user = await get_websocket_user(websocket, db)
-    if current_user is None:
-        await websocket.close(code=1008, reason="未认证")
-        return
-
-    if not await verify_soul_ownership(soul_id, current_user.id, db):
-        await websocket.close(code=1008, reason="权限不足")
-        return
-
-    await websocket.accept()
-    logger.info(f"🔗 Soul {soul_id} WebSocket 已连接 | user={current_user.id}")
-    
-    try:
-        while True:
-            data = await websocket.receive_text()
-            # 处理实时消息
-            await websocket.send_text(f"收到：{data}")
-    except WebSocketDisconnect:
-        logger.info(f"🔌 Soul {soul_id} WebSocket 断开")
-
-
-@app.websocket("/ws/persona/{puppy_id}")
-async def persona_websocket(
-    websocket: WebSocket,
-    puppy_id: str,
-    db: Session = Depends(get_db)
-):
-    """人格式实时通信通道（前端 personaWS 使用）"""
-    current_user = await get_websocket_user(websocket, db)
-    if current_user is None:
-        await websocket.close(code=1008, reason="未认证")
-        return
-
-    if not await verify_soul_ownership(puppy_id, current_user.id, db):
-        await websocket.close(code=1008, reason="权限不足")
-        return
-
-    await websocket.accept()
-    logger.info(f"🎭 Persona {puppy_id} WebSocket 已连接 | user={current_user.id}")
-    
-    try:
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
-            else:
-                # 广播人格更新
-                await websocket.send_json({
-                    "type": "persona_update",
-                    "puppy_id": puppy_id,
-                    "data": {"status": "active"}
-                })
-    except WebSocketDisconnect:
-        logger.info(f"🔌 Persona {puppy_id} WebSocket 断开")
-
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import uvicorn
+    # 使用 uvicorn 运行异步应用
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.DEBUG,
+        log_level="info",
+        loop="uvloop" if settings.DEBUG else "auto" # 生产环境建议使用 uvloop
+    )
