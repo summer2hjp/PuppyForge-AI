@@ -25,3 +25,10 @@ def client():
     from main import app
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def orchestrator():
+    """SwarmOrchestrator 测试夹具"""
+    from agents.orchestrator import SwarmOrchestrator
+    return SwarmOrchestrator()
