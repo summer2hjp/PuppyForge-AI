@@ -34,6 +34,7 @@ def test_docs_available(client):
 async def test_interact_endpoint(client):
     """测试核心交互接口"""
     # 注意：实际路由是 /api/interact/{soul_id}，需要使用 soul_id 参数
+    # 该接口需要认证，所以预期返回 401（未授权）或 404/501（服务不可用）
     response = client.post(
         "/api/interact/soul_test_001",
         json={
@@ -41,8 +42,8 @@ async def test_interact_endpoint(client):
             "user_id": "testuser"
         }
     )
-    # 由于依赖外部服务，可能返回 404 或 501，这是预期的
-    assert response.status_code in [200, 201, 404, 501]
+    # 由于需要认证，可能返回 401；由于依赖外部服务，可能返回 404 或 501，这是预期的
+    assert response.status_code in [200, 201, 401, 404, 501]
     if response.status_code in [200, 201]:
         data = response.json()
         assert "response" in data or "status" in data

@@ -30,11 +30,11 @@ class User(SQLModel, table=True):
     google_id: Optional[str] = Field(default=None, unique=True)
     github_id: Optional[str] = Field(default=None, unique=True)
     
-    # 关系 - 使用字符串前向引用（SQLModel/SQLAlchemy 会在运行时解析）
-    souls: "PuppySoul" = Relationship(
-        back_populates="owner",
-        sa_relationship_kwargs={"lazy": "selectin"}
-    )
+    # 关系 - 暂时移除 souls 关系以避免循环依赖
+    # souls: Optional["PuppySoul"] = Relationship(
+    #     back_populates="owner",
+    #     sa_relationship_kwargs={"lazy": "selectin"}
+    # )
     
     class Config:
         """Pydantic 配置"""

@@ -77,7 +77,12 @@ app.include_router(auth_router)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    import time
+    return {
+        "status": "healthy",
+        "version": settings.VERSION,
+        "uptime": int(time.time())
+    }
 
 
 @app.get("/")

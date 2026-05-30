@@ -1,7 +1,9 @@
 # backend/tests/test_models.py
 import pytest
 import uuid
-from models import PuppySoul, PetTraits, InteractionResult
+from models import PetTraits, InteractionResult
+# 延迟导入 PuppySoul 以避免循环依赖问题
+from models.models import PuppySoul
 
 
 def test_pet_traits():

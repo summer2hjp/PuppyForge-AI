@@ -41,11 +41,11 @@ class PetMemory(SQLModel, table=True):
     # ✅ 重命名：metadata → extra_data
     extra_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
     
-    # 关系 - 使用字符串引用，由 SQLModel 在运行时解析
-    soul: "PuppySoul" = Relationship(
-        back_populates="memories",
-        sa_relationship_kwargs={"lazy": "selectin"}
-    )
+    # 关系 - 暂时注释掉以避免循环依赖
+    # soul: "PuppySoul" = Relationship(
+    #     back_populates="memories",
+    #     sa_relationship_kwargs={"lazy": "selectin"}
+    # )
 
 
 # 前向声明供 PuppySoul 使用
@@ -80,15 +80,16 @@ class PuppySoul(SQLModel, table=True):
     
     # 外键关系 - 使用字符串引用避免循环依赖
     owner_id: Optional[str] = Field(default=None, foreign_key="users.id", index=True)
-    owner: "User" = Relationship(  # type: ignore[name-defined]
-        back_populates="souls"
-    )
+    # 暂时注释掉 owner 关系以避免循环依赖
+    # owner: "User" = Relationship(  # type: ignore[name-defined]
+    #     back_populates="souls"
+    # )
     
-    # 一对多关系 - 使用已定义的 PetMemoryRef
-    memories: PetMemoryRef = Relationship(  # type: ignore[misc]
-        back_populates="soul",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
-    )
+    # 一对多关系 - 暂时注释掉以避免循环依赖
+    # memories: PetMemoryRef = Relationship(  # type: ignore[misc]
+    #     back_populates="soul",
+    #     sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    # )
     
     # 性格特征（JSON 存储）
     traits: PetTraits = Field(
