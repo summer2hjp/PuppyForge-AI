@@ -2,7 +2,7 @@ name: 🔥 PuppyForge-AI 全栈 CI 测试核弹
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
