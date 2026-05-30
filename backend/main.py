@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings
+from config import settings
 from api.v1.auth import router as auth_router
 from api.v1.vision import router as vision_router
 from api.v1.interactions import router as interact_router
