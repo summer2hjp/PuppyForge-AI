@@ -9,7 +9,8 @@ import httpx
 from config import settings
 from models.auth import User, UserRead, UserCreate, UserRole
 from database import get_db
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -38,7 +39,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     """获取当前用户"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +54,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
 
-    result = db.exec(select(User).where(User.id == user_id))
+    result = await db.exec(select(User).where(User.id == user_id))
     user = result.first()
     if user is None or not user.is_active:
         raise credentials_exception
@@ -62,7 +63,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 def require_role(required_role: UserRole):
     """角色权限检查器"""
-    def role_checker(current_user: User = Depends(get_current_user)):
+    async def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role.value < required_role.value:
             raise HTTPException(status_code=403, detail="权限不足")
         return current_user
@@ -70,12 +71,12 @@ def require_role(required_role: UserRole):
 
 
 @router.post("/login")
-async def login(form_data: UserCreate, db: Session = Depends(get_db)):
+async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """用户登录（邮箱密码）"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
-    result = db.exec(select(User).where(User.email == form_data.email))
+    result = await db.exec(select(User).where(User.email == form_data.email))
     user = result.first()
     
     if not user or not user.hashed_password:
@@ -97,18 +98,17 @@ async def login(form_data: UserCreate, db: Session = Depends(get_db)):
     return {
         "user": UserRead.model_validate(user),
         "token": access_token,
-        "refreshToken": None  # 可扩展 refresh token 机制
+        "refreshToken": None
     }
 
 
 @router.post("/register")
-async def register(form_data: UserCreate, db: Session = Depends(get_db)):
+async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """用户注册"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
-    # 检查邮箱是否已存在
-    result = db.exec(select(User).where(User.email == form_data.email))
+    result = await db.exec(select(User).where(User.email == form_data.email))
     existing_user = result.first()
     if existing_user:
         raise HTTPException(
@@ -116,7 +116,6 @@ async def register(form_data: UserCreate, db: Session = Depends(get_db)):
             detail="该邮箱已被注册"
         )
     
-    # 创建新用户
     hashed_password = get_password_hash(form_data.password)
     new_user = User(
         email=form_data.email,
@@ -125,8 +124,8 @@ async def register(form_data: UserCreate, db: Session = Depends(get_db)):
     )
     
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     
     access_token = create_access_token(data={"sub": new_user.id})
     
@@ -139,8 +138,7 @@ async def register(form_data: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/logout")
 async def logout(current_user: User = Depends(get_current_user)):
-    """用户登出（可在黑名单中记录 token）"""
-    # TODO: 实现 token 黑名单机制
+    """用户登出"""
     return {"message": "已成功登出"}
 
 
@@ -156,16 +154,14 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh")
-async def refresh_token(refresh_data: dict, db: Session = Depends(get_db)):
+async def refresh_token(refresh_data: dict, db: AsyncSession = Depends(get_db)):
     """刷新访问令牌"""
-    # TODO: 实现 refresh token 逻辑
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Refresh token 暂未实现"
     )
 
 
-# Google OAuth
 @router.get("/google/login")
 async def google_login():
     """Google OAuth 登录入口"""
@@ -185,22 +181,8 @@ async def github_login():
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
     """Google OAuth 回调"""
-    # TODO: 实现完整的 OAuth 回调逻辑
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-                "grant_type": "authorization_code"
-            }
-        )
-        # 处理 token 和用户信息...
-    
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Google OAuth 回调暂未完全实现"
