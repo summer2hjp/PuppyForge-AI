@@ -3,6 +3,8 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
+from sqlmodel import SQLModel
+from database import engine, AsyncSessionLocal
 
 # 全局 Mock 避免导入错误
 pytest_plugins = ["pytest_asyncio"]
@@ -17,6 +19,19 @@ def mock_external_services():
         mock_orch.return_value.interact = MagicMock()
         
         yield
+
+
+@pytest.fixture
+async def test_db():
+    """创建测试数据库会话"""
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    
+    async with AsyncSessionLocal() as session:
+        yield session
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
 
 
 @pytest.fixture
