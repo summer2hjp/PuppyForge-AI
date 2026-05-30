@@ -21,30 +21,33 @@ DATABASE_URL = settings.DATABASE_URL
 if DATABASE_URL.startswith("sqlite:///"):
     DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://")
 
-# 🛡️ 核心修复：检测所有 SQLite 变体 (文件/内存)，统一剥离池化参数
+# --- 🛡️ 核心修复：动态构建引擎参数，彻底隔离 SQLite ---
 IS_SQLITE = "sqlite" in DATABASE_URL.lower()
 
-connect_args = {}
-if IS_SQLITE:
-    connect_args["check_same_thread"] = False
-    # 内存数据库必须用 StaticPool，文件数据库用 NullPool (SQLite 默认)
-    poolclass = StaticPool if ":memory:" in DATABASE_URL else NullPool
-else:
-    poolclass = None  # PostgreSQL/MySQL 使用默认 QueuePool
+# 基础必传参数
+engine_kwargs = {
+    "echo": settings.DEBUG,
+}
 
-# --- 创建异步引擎 ---
-# 🚀 激进传参：仅非 SQLite 时注入池化配置，避免 TypeError
-engine: AsyncEngine = create_async_engine(
-    DATABASE_URL,
-    echo=settings.DEBUG,
-    # future=True,  # SQLAlchemy 2.0+ 默认开启，可移除
-    pool_pre_ping=True if not IS_SQLITE else False,  # SQLite 无需 ping 检查
-    pool_size=10 if not IS_SQLITE else None,
-    max_overflow=20 if not IS_SQLITE else None,
-    pool_recycle=3600 if not IS_SQLITE else None,
-    poolclass=poolclass,
-    connect_args=connect_args
-)
+if IS_SQLITE:
+    # SQLite 专属配置：无连接池 + 线程安全
+    connect_args = {"check_same_thread": False}
+    engine_kwargs.update({
+        "poolclass": StaticPool if ":memory:" in DATABASE_URL else NullPool,
+        "connect_args": connect_args,
+        # 🚫 绝对不传 pool_size/max_overflow/pool_recycle/pool_pre_ping
+    })
+else:
+    # PostgreSQL/MySQL 高并发配置
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_recycle": 3600,
+    })
+
+# 🚀 安全创建引擎：参数字典按需注入
+engine: AsyncEngine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 # --- 创建异步 Session 工厂 ---
 async_session_maker = async_sessionmaker(
