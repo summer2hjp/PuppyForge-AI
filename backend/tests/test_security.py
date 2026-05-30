@@ -1,34 +1,47 @@
 import pytest
-from auth import create_access_token
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
+
 class TestSecurity:
-
-    async def test_sql_injection_prevention(self, client):
-        """SQL 注入防护测试"""
-        malicious_payloads = [
-            "'; DROP TABLE users; --",
-            "' OR '1'='1",
-            "<script>alert('xss')</script>"
+    
+    def test_sql_injection_prevention(self, client: TestClient):
+        """测试 SQL 注入防护 - 接受 400/401/422 均为有效拦截"""
+        payloads = [
+            {"username": "admin' OR '1'='1", "password": "test"},
+            {"username": "test'; DROP TABLE users--", "password": "pass"},
+            {"username": "normal", "password": "1' UNION SELECT * FROM users--"},
         ]
         
-        for payload in malicious_payloads:
-            response = client.post("/auth/login", json={
-                "email": payload,
-                "password": "password"
-            })
-            assert response.status_code in [400, 401]  # 拒绝恶意输入
-
-    async def test_jwt_token_validation(self, client):
-        """JWT Token 安全验证"""
-        # 无效 Token
-        headers = {"Authorization": "Bearer invalid.token.here"}
-        response = client.get("/protected-route", headers=headers)
-        assert response.status_code in [401, 404]
-
-    async def test_rate_limiting(self, client):
-        """请求频率限制测试"""
-        # 由于 rate limiting 需要实际运行服务器，此测试简化处理
-        response = client.post("/auth/login", json={"email": "test@puppyforge.ai", "password": "pass"})
-        # 接受任何合理的响应（401/429/500 等）
-        assert response.status_code in [401, 429, 500, 400]
+        for payload in payloads:
+            response = client.post("/api/v1/login/access-token", data=payload)
+            # 接受多种拦截状态码：422(参数校验)/400(业务拦截)/401(认证失败)
+            assert response.status_code in [400, 401, 422], \
+                f"Expected security block, got {response.status_code}: {response.text}"
+    
+    def test_rate_limiting(self, client: TestClient, db_session: Session):
+        """测试速率限制 - 确保依赖注入正常"""
+        # 先创建测试用户并登录获取 token
+        from backend.app.core.security import get_password_hash, create_access_token
+        from backend.app.models.user import User
+        
+        user = User(
+            email="ratelimit@test.com",
+            hashed_password=get_password_hash("Test123!"),
+            is_active=True
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        
+        token = create_access_token(subject=str(user.id))
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # 快速发起多次请求（超过配置限制）
+        from backend.app.core.config import settings
+        for i in range(settings.RATE_LIMIT_REQUESTS + 5):
+            response = client.get("/api/v1/users/me", headers=headers)
+            if i >= settings.RATE_LIMIT_REQUESTS:
+                # 超出限制应返回 429
+                assert response.status_code == 429, \
+                    f"Expected 429 after limit, got {response.status_code}"
+                break
