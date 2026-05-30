@@ -1,1 +1,26 @@
-Nothing should be ignored based on the provided file changes. The only modified file is 'backend/auth.py', which is a source code file and should not be added to .gitignore.
+```
+# Dependencies
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env
+.env.local
+.env.*
+.envrc
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+```
