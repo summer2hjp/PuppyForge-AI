@@ -1,4 +1,4 @@
-from orchestrator import SwarmOrchestrator
+from agents.orchestrator import SwarmOrchestrator
 
 def test_orchestrator_health_diagnosis():
     orchestrator = SwarmOrchestrator()
