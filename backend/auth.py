@@ -39,6 +39,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
+def verify_token(token: str) -> dict:
+    """验证并解码令牌"""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     """获取当前用户"""
     credentials_exception = HTTPException(
