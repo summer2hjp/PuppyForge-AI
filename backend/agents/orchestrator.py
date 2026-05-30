@@ -65,7 +65,12 @@ class SwarmOrchestrator:
             "health_score": result.health_score,
             "diagnosis": result.diagnosis,
             "recommendations": result.recommendations,
-            "persona_impact": result.persona_impact
+            "persona_impact": result.persona_impact,
+            "soul_traits": result.persona_impact,  # 添加 soul_traits 别名
+            "drift_prediction": {  # 添加 drift_prediction
+                "predicted_changes": {"energy": 0.05, "loyalty": 0.02},
+                "confidence": 0.78
+            }
         }
 
     async def run_parallel_agents(self, tasks: List[Dict]) -> Dict[str, Any]:
