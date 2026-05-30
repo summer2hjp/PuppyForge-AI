@@ -1,7 +1,7 @@
 import pytest
 import time
 import asyncio
-from orchestrator import SwarmOrchestrator
+from agents.orchestrator import SwarmOrchestrator
 
 @pytest.mark.asyncio
 class TestPerformance系统测试:
