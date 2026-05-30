@@ -23,3 +23,19 @@ class DiagnosisAgent(BaseAgent):
             "risk_level": risk_level,
             "visual_insights": visual
         }
+
+    async def analyze(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """简化分析接口（供 SwarmOrchestrator 使用）"""
+        visual = input_data.get("image_bytes", b"")
+        event = input_data.get("event", "")
+        
+        # 模拟诊断结果
+        risk_level = 3  # 默认低风险
+        confidence = 0.85
+        
+        return {
+            "diagnosis": f"基于事件 '{event}' 的健康评估正常",
+            "risk_level": risk_level,
+            "confidence": confidence,
+            "suggestions": ["保持当前互动频率", "定期记录行为数据"]
+        }
