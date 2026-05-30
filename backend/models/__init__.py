@@ -1,26 +1,40 @@
-# models/__init__.py
-# 先导入 PuppySoul，再导入 User，避免循环依赖
-from .models import (
-    PetTraits,
-    PetMemory,
-    EvolutionStage,
-    PuppySoul,
-    PuppySoulCreate,
-    PuppySoulRead,
-    PuppySoulUpdate,
-    SoulEvent,
-    InteractionResult,
-    ErrorResponse,
-    TraitDriftRequest,
-)
-from .auth import User, UserRole, UserCreate, UserRead, Token, TokenData
+"""
+此模块负责导入并注册所有 SQLModel 模型类。
+导入顺序至关重要：必须先导入基础模型（如 User），再导入依赖它们的模型。
+"""
 
+# 1. 导入核心认证模型 (无外部模型依赖)
+from models.auth import User, UserCreate, UserRead, UserUpdate, UserRole
+
+# 2. 导入业务模型
+# 注意：这些模块内部通过 TYPE_CHECKING 处理了循环导入问题
+from models.soul import PuppySoul, PuppySoulCreate, PuppySoulRead, PuppySoulUpdate
+from models.interaction import Interaction, InteractionCreate, InteractionRead, InteractionUpdate
+from models.diagnosis import Diagnosis, DiagnosisCreate, DiagnosisRead
+
+# 3. 显式导出所有公开符号，方便外部使用 (如: from models import User)
 __all__ = [
-    # Models - 必须先导出
-    "PetTraits", "PetMemory", "EvolutionStage",
-    "PuppySoul", "PuppySoulCreate", "PuppySoulRead", "PuppySoulUpdate",
-    "SoulEvent", "InteractionResult", "ErrorResponse",
-    "TraitDriftRequest",
-    # Auth - 后导出，依赖 PuppySoul
-    "User", "UserRole", "UserCreate", "UserRead", "Token", "TokenData",
+    # Auth
+    "User",
+    "UserCreate",
+    "UserRead",
+    "UserUpdate",
+    "UserRole",
+    
+    # Soul
+    "PuppySoul",
+    "PuppySoulCreate",
+    "PuppySoulRead",
+    "PuppySoulUpdate",
+    
+    # Interaction
+    "Interaction",
+    "InteractionCreate",
+    "InteractionRead",
+    "InteractionUpdate",
+    
+    # Diagnosis
+    "Diagnosis",
+    "DiagnosisCreate",
+    "DiagnosisRead",
 ]
