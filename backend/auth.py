@@ -2,14 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import httpx
 
 from config import settings
 from models.auth import User, UserRead, UserCreate, UserRole
 from database import get_db
-from sqlmodel import Session, select
+from sqlmodel import Session, select, SQLModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select as async_select
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -30,12 +32,12 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """创建访问令牌"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     """获取当前用户"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -50,7 +52,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
 
-    user = db.exec(select(User).where(User.id == user_id)).first()
+    result = await db.execute(async_select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
     if user is None or not user.is_active:
         raise credentials_exception
     return user
@@ -66,12 +69,13 @@ def require_role(required_role: UserRole):
 
 
 @router.post("/login")
-async def login(form_data: UserCreate, db: Session = Depends(get_db)):
+async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """用户登录（邮箱密码）"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
-    user = db.exec(select(User).where(User.email == form_data.email)).first()
+    result = await db.execute(async_select(User).where(User.email == form_data.email))
+    user = result.scalar_one_or_none()
     
     if not user or not user.hashed_password:
         raise HTTPException(
@@ -97,13 +101,14 @@ async def login(form_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/register")
-async def register(form_data: UserCreate, db: Session = Depends(get_db)):
+async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """用户注册"""
     if not form_data.password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
     # 检查邮箱是否已存在
-    existing_user = db.exec(select(User).where(User.email == form_data.email)).first()
+    result = await db.execute(async_select(User).where(User.email == form_data.email))
+    existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -119,8 +124,8 @@ async def register(form_data: UserCreate, db: Session = Depends(get_db)):
     )
     
     db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    await db.commit()
+    await db.refresh(new_user)
     
     access_token = create_access_token(data={"sub": new_user.id})
     
