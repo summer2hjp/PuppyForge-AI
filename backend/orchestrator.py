@@ -25,6 +25,9 @@ from agents import (
     memory_weaver
 )
 
+# 导入 SwarmOrchestrator 以便从 orchestrator 模块直接访问
+from agents.orchestrator import SwarmOrchestrator
+
 logger = logging.getLogger("puppyforge.orchestrator")
 
 
