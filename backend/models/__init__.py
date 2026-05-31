@@ -12,8 +12,11 @@ from models.soul import PuppySoul, PuppySoulCreate, PuppySoulRead, PuppySoulUpda
 from models.interaction import Interaction, InteractionCreate, InteractionRead, InteractionUpdate
 from models.diagnosis import Diagnosis, DiagnosisCreate, DiagnosisRead
 
-# 3. 导入 Pydantic 模型 (从 models.py)
-from models.models import PetMemory, PetTraits, PuppySoul as PydanticPuppySoul, SoulEvent, InteractionResult, ErrorResponse
+# 3. 导入 Pydantic 基础模型 (从 models/base.py)
+from models.base import PetMemory, PetTraits, PuppySoul as PuppySoulPydantic, SoulEvent, InteractionResult, ErrorResponse
+
+# 为了向后兼容，将 PuppySoulPydantic 别名为 PuppySoul (当从 models 导入时)
+PuppySoul = PuppySoulPydantic
 
 # 4. 显式导出所有公开符号，方便外部使用 (如: from models import User)
 __all__ = [
