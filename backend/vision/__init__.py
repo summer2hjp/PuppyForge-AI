@@ -1,4 +1,4 @@
-from .soul_diagnosis import diagnosis_service
+from .soul_diagnosis import diagnosis_service, router
 from typing import Optional, Dict, Any
 import base64
 
