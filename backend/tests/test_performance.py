@@ -4,7 +4,7 @@ import asyncio
 from agents.orchestrator import SwarmOrchestrator
 
 @pytest.mark.asyncio
-class TestPerformance系统测试:
+class TestPerformance:
 
     async def test_single_diagnosis_performance(self, orchestrator):
         """单次诊断性能测试"""
