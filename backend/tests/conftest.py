@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from fastapi.testclient import TestClient
 from main import app
 from database import get_db
+from app.services.orchestrator import SwarmOrchestrator
 
 # 使用内存 SQLite 进行异步测试
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
