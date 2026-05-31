@@ -37,6 +37,8 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+ws_router = router
+
 @router.websocket("/diagnosis/{user_id}")
 async def websocket_diagnosis(
     websocket: WebSocket,
