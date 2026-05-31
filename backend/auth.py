@@ -77,10 +77,15 @@ async def get_current_user(
         raise credentials_exception
 
     # 异步执行数据库查询
-    result = await db.exec(select(User).where(User.id == user_id))
+    from sqlmodel import select
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.first()
     
-    if user is None or not user.is_active:
+    if user is None:
+        raise credentials_exception
+    
+    # 使用列索引访问而不是属性访问，避免 Row 对象问题
+    if not getattr(user, 'is_active', False):
         raise credentials_exception
     return user
 
@@ -101,7 +106,8 @@ async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
     # 异步查询用户
-    result = await db.exec(select(User).where(User.email == form_data.email))
+    from sqlmodel import select
+    result = await db.execute(select(User).where(User.email == form_data.email))
     user = result.first()
     
     if not user or not user.hashed_password:
@@ -133,7 +139,8 @@ async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码不能为空")
 
     # 异步检查邮箱是否存在
-    result = await db.exec(select(User).where(User.email == form_data.email))
+    from sqlmodel import select
+    result = await db.execute(select(User).where(User.email == form_data.email))
     existing_user = result.first()
     if existing_user:
         raise HTTPException(
@@ -245,7 +252,8 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             if not email:
                 raise HTTPException(status_code=400, detail="无法获取邮箱")
                 
-            result = await db.exec(select(User).where(User.email == email))
+            from sqlmodel import select
+            result = await db.execute(select(User).where(User.email == email))
             user = result.first()
             
             if not user:

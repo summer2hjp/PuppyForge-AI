@@ -33,16 +33,15 @@ def test_create_access_token():
 async def test_get_current_user_valid(client, test_db):
     # 先创建测试用户 - 使用传入的 test_db session
     user = User(
-        id="testuser123",
         email="test@puppyforge.ai",
         hashed_password=get_password_hash("testpass"),
         is_active=True,
     )
     test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
+    await test_db.commit()
+    await test_db.refresh(user)
 
-    token = create_access_token({"sub": "testuser123"})
+    token = create_access_token({"sub": str(user.id)})
 
     # 通过 API 验证 token - 使用正确的路由前缀 /api/v1/auth/me
     response = client.get(
@@ -55,7 +54,6 @@ async def test_get_current_user_valid(client, test_db):
 def test_login_success(client, test_db):
     # 创建用户
     user = User(
-        id="testuser456",
         email="test@puppyforge.ai",
         hashed_password=get_password_hash("testpass"),
         is_active=True,
@@ -74,7 +72,6 @@ def test_login_success(client, test_db):
 def test_login_invalid_password(client, test_db):
     # 先创建用户
     user = User(
-        id="testuser789",
         email="test2@puppyforge.ai",
         hashed_password=get_password_hash("testpass"),
         is_active=True,

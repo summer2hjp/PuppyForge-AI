@@ -133,6 +133,7 @@ async def health_check(request: Request) -> dict:
         
         return {
             "status": "healthy",
+            "uptime": 0,
             "version": "1.0.0",
             "services": {
                 "database": "connected",
@@ -147,11 +148,11 @@ async def health_check(request: Request) -> dict:
         )
 
 # 包含各个路由器 (所有路由现在都是异步的)
+# 认证路由不需要 API key 验证（它们有自己的认证机制）
 app.include_router(
     auth_router,
     prefix="/api/v1/auth",
-    tags=["Authentication"],
-    dependencies=[Depends(verify_api_key)]
+    tags=["Authentication"]
 )
 
 app.include_router(
@@ -187,6 +188,7 @@ app.include_router(
 async def root():
     """根路径欢迎信息"""
     return {
+        "status": "healthy",
         "message": "Welcome to AI Soul Backend API",
         "docs": "/docs" if settings.DEBUG else "Disabled in production",
         "version": "1.0.0"
