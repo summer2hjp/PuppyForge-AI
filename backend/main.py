@@ -14,8 +14,9 @@ from config import settings
 from auth import router as auth_router
 from vision import router as vision_router
 from interactions import router as interact_router
-from souls import router as soul_router
 from websocket import router as ws_router
+from souls import router as soul_router
+
 from database import init_db, get_db, engine
 from utils.security import verify_token
 from utils.middleware import add_security_headers
