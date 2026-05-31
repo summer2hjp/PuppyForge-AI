@@ -26,6 +26,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def add_security_headers(request: Request, response):
+    """添加安全头部"""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 def setup_global_exception_handlers(app: FastAPI):
     """设置全局异常处理器"""
 
@@ -82,7 +90,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     response = await call_next(request)
-    return await add_security_headers(request, response)
+    return add_security_headers(request, response)
 
 # CORS 中间件配置
 app.add_middleware(
