@@ -59,4 +59,5 @@ class PuppySoul(PuppySoulBase, table=True):
 
     # 关系定义
     user: "User" = Relationship(back_populates="souls")
+    diagnoses: List["Diagnosis"] = Relationship(back_populates="soul")
     # interactions: List["Interaction"] = Relationship(back_populates="soul")
