@@ -71,6 +71,11 @@ class Settings(BaseSettings):
     SOUL_FUEL_DECAY_RATE: float = 0.5
     TRAIT_DRIFT_INTENSITY: float = 0.1
 
+    # --- Soul 配置 ---
+    DEFAULT_SOUL_FUEL: float = 100.0
+    SOUL_FUEL_DECAY_RATE: float = 0.5
+    TRAIT_DRIFT_INTENSITY: float = 0.1
+    
     # Pydantic Settings 配置
     model_config = SettingsConfigDict(
         env_file=".env",

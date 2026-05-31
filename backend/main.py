@@ -33,7 +33,7 @@ def add_security_headers(request: Request, response):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
-
+    
 def setup_global_exception_handlers(app: FastAPI):
     """设置全局异常处理器"""
 

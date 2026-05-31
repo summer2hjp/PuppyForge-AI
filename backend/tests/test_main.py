@@ -23,7 +23,7 @@ def test_health_check(client):
     # 接受 "ok" 或 "healthy" 作为有效状态
     assert data["status"] in ["ok", "healthy"]
     assert "version" in data
-    # uptime is optional, may not be present
+    #assert "uptime" in data
 
 
 def test_docs_available(client):

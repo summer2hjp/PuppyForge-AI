@@ -17,6 +17,7 @@ from database import get_db
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
+#router = APIRouter(prefix="/auth", tags=["Authentication"])
 router = APIRouter(tags=["Authentication"])
 
 # --- 辅助函数 ---

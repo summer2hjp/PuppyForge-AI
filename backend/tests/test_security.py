@@ -17,7 +17,7 @@ class TestSecurity:
                 "email": payload,
                 "password": "password"
             })
-            assert response.status_code in [400, 401, 404]  # 拒绝恶意输入或路由不存在
+            assert response.status_code in [400, 401, 404]  # 拒绝恶意输入
 
     async def test_jwt_token_validation(self, client):
         """JWT Token 安全验证"""
