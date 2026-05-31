@@ -28,7 +28,7 @@ class TestSecurity:
 
     async def test_rate_limiting(self, client):
         """请求频率限制测试"""
-        # 由于 rate limiting 需要实际运行服务器，此测试简化处理
-        response = client.post("/api/v1/auth/login", json={"email": "test@puppyforge.ai", "password": "pass"})
-        # 接受任何合理的响应（401/429/500/404 等）
+        # 密码长度需要至少 6 个字符
+        response = client.post("/api/v1/auth/login", json={"email": "test@puppyforge.ai", "password": "pass123"})
+        # 接受任何合理的响应（401/429/500/400/404 等）
         assert response.status_code in [401, 429, 500, 400, 404]
