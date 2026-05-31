@@ -21,7 +21,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 router = APIRouter(tags=["Authentication"])
 
 # --- 辅助函数 ---
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
     import bcrypt
