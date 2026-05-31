@@ -78,5 +78,16 @@ PuppyForge-AI 是一个激进的 AI-Native 后端架构。它将 Event Sourcing�
 
 ### Docker
 ```bash
-# 拉起 FastAPI, Redis Streams, Qdrant 闭环生态
-docker-compose up -d --build
+# 1. 创建 .env 文件
+cp .env.example .env
+
+# 2. 启动所有服务
+docker compose up -d --build
+
+# 3. 查看日志
+docker compose logs -f backend
+
+# 4. 访问服务
+Backend: http://localhost:8000
+Frontend: http://localhost:3000
+API Docs: http://localhost:8000/docs
