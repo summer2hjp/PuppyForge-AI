@@ -40,3 +40,17 @@ def mock_external_services():
     with patch('agents.orchestrator.SwarmOrchestrator') as mock_orch:
         mock_orch.return_value.run_full_diagnosis = AsyncMock()
         yield
+
+@pytest.fixture
+async def orchestrator():
+    """提供 SwarmOrchestrator 实例用于测试"""
+    orch = SwarmOrchestrator()
+    # Mock run_full_diagnosis 方法以避免实际调用外部服务
+    with patch.object(orch, 'run_full_diagnosis', new_callable=AsyncMock) as mock_run:
+        # 设置默认返回值
+        mock_run.return_value = {
+            "health_score": 95,
+            "soul_traits": ["playful", "loyal"],
+            "recommendations": ["Regular exercise", "Balanced diet"]
+        }
+        yield orch
