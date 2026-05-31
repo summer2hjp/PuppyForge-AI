@@ -79,8 +79,9 @@ def test_login_invalid_password(client, test_db):
     test_db.add(user)
     test_db.commit()
 
+    # 密码长度需要至少 6 个字符（符合 UserCreate 的验证要求）
     response = client.post(
         "/api/v1/auth/login",
-        json={"email": "test2@puppyforge.ai", "password": "wrong"}
+        json={"email": "test2@puppyforge.ai", "password": "wrongpass"}
     )
     assert response.status_code == 401
