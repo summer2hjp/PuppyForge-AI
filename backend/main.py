@@ -25,6 +25,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def setup_global_exception_handlers(app: FastAPI):
+    """设置全局异常处理器"""
+    
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(exc)}"
+        )
+
 # 初始化速率限制器
 limiter = Limiter(key_func=get_remote_address)
 
