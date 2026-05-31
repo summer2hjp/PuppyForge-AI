@@ -6,15 +6,14 @@
 from models.auth import User, UserCreate, UserRead, UserUpdate, UserRole
 
 # 2. 导入业务模型
-# 注意：这些模块内部通过 TYPE_CHECKING 处理了循环导入问题
 from models.soul import PuppySoul, PuppySoulCreate, PuppySoulRead, PuppySoulUpdate
 from models.interaction import Interaction, InteractionCreate, InteractionRead, InteractionUpdate
 from models.diagnosis import Diagnosis, DiagnosisCreate, DiagnosisRead
 
-# 3. 导入 Pydantic 模型 (从 models.py)
-from models.models import PetMemory, PetTraits, PuppySoul as PydanticPuppySoul, SoulEvent, InteractionResult, ErrorResponse
+# 3. 导入 Pydantic 模型
+from models.base import PetMemory, PetTraits, PetSoul, SoulEvent, InteractionResult, ErrorResponse
 
-# 4. 显式导出所有公开符号，方便外部使用 (如: from models import User)
+# 4. 显式导出所有公开符号，方便外部使用
 __all__ = [
     # Auth
     "User",
@@ -43,6 +42,7 @@ __all__ = [
     # Pydantic Models
     "PetMemory",
     "PetTraits",
+    "PetSoul",
     "SoulEvent",
     "InteractionResult",
     "ErrorResponse",
