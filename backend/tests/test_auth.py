@@ -44,9 +44,9 @@ async def test_get_current_user_valid(client, test_db):
 
     token = create_access_token({"sub": "testuser123"})
 
-    # 通过 API 验证 token
+    # 通过 API 验证 token - 使用正确的路由前缀 /api/v1/auth/me
     response = client.get(
-        "/auth/me",
+        "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
@@ -64,7 +64,7 @@ def test_login_success(client, test_db):
     test_db.commit()
 
     response = client.post(
-        "/auth/login",
+        "/api/v1/auth/login",
         json={"email": "test@puppyforge.ai", "password": "testpass"}
     )
     # 根据实际 login 实现调整断言
@@ -83,7 +83,7 @@ def test_login_invalid_password(client, test_db):
     test_db.commit()
 
     response = client.post(
-        "/auth/login",
+        "/api/v1/auth/login",
         json={"email": "test2@puppyforge.ai", "password": "wrong"}
     )
     assert response.status_code == 401

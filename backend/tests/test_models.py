@@ -1,9 +1,7 @@
 # backend/tests/test_models.py
 import pytest
 import uuid
-from models import PetTraits, InteractionResult
-# 延迟导入 PuppySoul 以避免循环依赖问题
-from models.models import PuppySoul
+from models import PetTraits, InteractionResult, PetSoul
 
 
 def test_pet_traits():
@@ -14,7 +12,7 @@ def test_pet_traits():
 
 
 def test_puppy_soul_model():
-    soul = PuppySoul(
+    soul = PetSoul(
         id=str(uuid.uuid4()),
         name="小奶豆",
         level=1,
@@ -28,7 +26,7 @@ def test_puppy_soul_model():
 
 
 def test_interaction_result():
-    soul = PuppySoul(id=str(uuid.uuid4()), name="测试")
+    soul = PetSoul(id=str(uuid.uuid4()), name="测试")
     result = InteractionResult(
         soul=soul,
         response="汪汪汪~",
