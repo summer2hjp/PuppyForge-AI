@@ -79,13 +79,13 @@ async def get_current_user(
     # 异步执行数据库查询
     from sqlmodel import select
     result = await db.execute(select(User).where(User.id == user_id))
-    user = result.first()
+    user = result.scalars().first()
     
     if user is None:
         raise credentials_exception
     
     # 使用列索引访问而不是属性访问，避免 Row 对象问题
-    if not getattr(user, 'is_active', False):
+    if not user.is_active:
         raise credentials_exception
     return user
 
@@ -108,7 +108,7 @@ async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     # 异步查询用户
     from sqlmodel import select
     result = await db.execute(select(User).where(User.email == form_data.email))
-    user = result.first()
+    user = result.scalars().first()
     
     if not user or not user.hashed_password:
         raise HTTPException(
@@ -141,7 +141,7 @@ async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     # 异步检查邮箱是否存在
     from sqlmodel import select
     result = await db.execute(select(User).where(User.email == form_data.email))
-    existing_user = result.first()
+    existing_user = result.scalars().first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -254,7 +254,7 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
                 
             from sqlmodel import select
             result = await db.execute(select(User).where(User.email == email))
-            user = result.first()
+            user = result.scalars().first()
             
             if not user:
                 # 创建新用户
