@@ -17,13 +17,15 @@ from database import get_db
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+#router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 # --- 辅助函数 ---
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    import bcrypt
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 def get_password_hash(password: str) -> str:
     """生成密码哈希 (处理 bcrypt 72字节限制)"""
@@ -31,7 +33,9 @@ def get_password_hash(password: str) -> str:
     password_bytes = password.encode('utf-8')
     if len(password_bytes) > 72:
         password = password_bytes[:72].decode('utf-8', errors='ignore')
-    return pwd_context.hash(password)
+    # 使用 bcrypt 直接哈希，避免 passlib 的兼容性问题
+    import bcrypt
+    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """创建访问令牌"""
