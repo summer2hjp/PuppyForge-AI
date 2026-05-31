@@ -21,6 +21,12 @@ async def test_db():
     
     async with async_session_maker() as session:
         yield session
+        # 确保在测试完成后提交
+        try:
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
     
     # 删除表
     async with test_engine.begin() as conn:

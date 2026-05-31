@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 import uuid
 
@@ -18,7 +18,7 @@ class PetTraits(BaseModel):
 
 class PetMemory(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     type: str  # interaction / drift / evolution / rebellion
     content: str
     impact: float = 0.8
@@ -34,7 +34,7 @@ class PetSoul(BaseModel):
     experience: int = 0
     traits: PetTraits = Field(default_factory=PetTraits)
     memories: List[PetMemory] = Field(default_factory=list)
-    last_active: datetime = Field(default_factory=datetime.utcnow)
+    last_active: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     total_interactions: int = 0
     evolution_stage: str = "puppy"
     soul_fuel: float = Field(default_factory=lambda: settings.DEFAULT_SOUL_FUEL)
@@ -56,7 +56,7 @@ class PetSoul(BaseModel):
 class SoulEvent(BaseModel):
     event_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     soul_id: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     event_type: str
     payload: Dict[str, Any]
 
