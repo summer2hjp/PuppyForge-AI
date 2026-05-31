@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     # --- 日志配置 ---
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    # --- LLM 配置 ---
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5.4-mini")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
     # Pydantic Settings 配置
     model_config = SettingsConfigDict(
