@@ -21,14 +21,14 @@
     "framer-motion": "^11.5.0",
     "jose": "^5.9.6",
     "lucide-react": "^0.441.0",
-    "next": "^14.2.24",
+    "next": "^14.2.31",
     "next-themes": "^0.4.6",
     "postcss": "^8.4.41",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^3.4.1",
     "three": "^0.168.0",
     "zustand": "^4.5.5"
   },
@@ -56,5 +56,10 @@
     "workbox-expiration": "^7.4.1",
     "workbox-routing": "^7.4.1",
     "workbox-strategies": "^7.4.1"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom",
+    "react-is": "^18.2.0"
   }
 }
