@@ -10,18 +10,18 @@ services:
   # ==================== 🗄️ PostgreSQL ====================
   postgres:
     image: postgres:16-alpine
-    container_name: pf-postgres
+    container_name: puppyforge-postgres
     env_file: .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-puppy_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_secure_pg_password_!@#}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin@123}
       POSTGRES_DB: ${POSTGRES_DB:-puppyforge_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "${PG_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-puppy_admin} -d ${POSTGRES_DB:-puppyforge_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-puppyforge_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,10 +33,10 @@ services:
   # ==================== ⚡ Redis ====================
   redis:
     image: redis:7-alpine
-    container_name: pf-redis
+    container_name: puppyforge-redis
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD:-change_me_secure_redis_password_!@}
+      --requirepass ${REDIS_PASSWORD:-admin@123}
       --maxmemory-policy allkeys-lru
       --appendonly yes
     env_file: .env
@@ -45,7 +45,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-change_me_secure_redis_password_!@#}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-admin@123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,48 +54,34 @@ services:
       - puppyforge-net
 
   # ==================== 🔙 Backend (FastAPI) ====================
-  backend:
+ backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-      args:
-        - BUILDKIT_INLINE_CACHE=1
-    container_name: pf-backend
-    env_file: .env
+      dockerfile: Dockerfile.backend
+    container_name: puppyforge-backend
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      # 🔗 动态覆盖数据库/Redis 连接串（优先于 .env）
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-puppy_admin}:${POSTGRES_PASSWORD:-change_me_secure_pg_password_!@#}@postgres:5432/${POSTGRES_DB:-puppyforge_db}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-change_me_secure_redis_password_!@#}@redis:6379/${REDIS_DB:-0}
-      # 📊 观测性
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      # 🔑 安全配置
-      SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-in-prod}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      DEBUG: ${DEBUG:-False}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin@123}@${POSTGR>
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      # 🛠️ 开发模式热重载（仅挂载关键源码，避免覆盖依赖）
-      - ./backend/main.py:/app/main.py:ro
-      - ./backend/auth.py:/app/auth.py:ro
-      - ./backend/models:/app/models:ro
-      - ./backend/core:/app/core:ro
-      - ./backend/security:/app/security:ro
-      - ./backend/gateway:/app/gateway:ro
-      - ./backend/agents:/app/agents:ro
-      - ./backend/forge:/app/forge:ro
-      - ./backend/souls.py:/app/souls.py:ro
-      - ./backend/interactions.py:/app/interactions.py:ro
-      - backend_logs:/app/logs
-    restart: unless-stopped
     networks:
-      - puppyforge-net
-    command: uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000}:8000 --reload --log-level ${LOG_LEVEL:-info}
+      - backend-net
+    volumes:
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --log-level info
 
   # ==================== 🎨 Frontend (Next.js) ====================
   frontend:
@@ -107,7 +93,8 @@ services:
         - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT:-8000}${API_V1_PREFIX:-/api/v1}
         - NEXT_PUBLIC_WS_URL=ws://localhost:${BACKEND_PORT:-8000}/ws
         - NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME:-PuppyForge AI}
-    container_name: pf-frontend
+    container_name: puppyforge-frontend
+    working_dir: /app
     env_file: .env
     environment:
       # 🔒 服务端变量（不暴露给浏览器）
@@ -144,6 +131,8 @@ volumes:
   redis_data:
     driver: local
   backend_logs:
+    driver: local
+  backend_uploads:
     driver: local
   frontend_node_modules:
     driver: local
