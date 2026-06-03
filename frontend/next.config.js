@@ -7,20 +7,25 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false, // 移除 X-Powered-By 头部
 
+  allowedDevOrigins: ['192.168.3.106', 'localhost', '127.0.0.1'],
+
   // 🖼️ 图片优化配置
-  images: {
+  /*images: {
     domains: [
       'cdn.puppyforge.ai',
       'avatars.githubusercontent.com',
-      'localhost',
-      '127.0.0.1'
+      '192.168.3.160',
+      '192.168.3.106'
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
     deviceSizes: [320, 420, 768, 1024, 1280, 1600],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
   },
-
+  */
+  images: {
+    unoptimized: true,
+  },
   // 🔐 安全响应头 (生产环境推荐)
   async headers() {
     return [
