@@ -4,51 +4,181 @@ import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/hooks/useAuth';
-import { motion } from 'framer-motion';
-import { Send, Zap, X } from 'lucide-react';
+import { Send, Zap, AlertCircle, Loader2, LogOut } from 'lucide-react';
 
-// 动态导入 SoulRadar，禁用 SSR 以避免 hydration 错误
+// 动态导入 SoulRadar (禁用 SSR)
 const SoulRadar = dynamic(() => import('@/components/SoulRadar'), { 
   ssr: false,
   loading: () => (
     <div className="w-full h-full min-h-[400px] flex items-center justify-center bg-zinc-900/50 rounded-2xl border border-white/10">
       <div className="text-cyan-400 animate-pulse flex flex-col items-center gap-2">
         <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        <span>正在连接灵魂网络...</span>
+        <span>正在初始化灵魂核心...</span>
       </div>
     </div>
   )
 });
 
-export default function PuppyForgeDashboard() {
-  const { user, loginWithOAuth } = useAuth();
-  const [soulId] = useState("summer2hjp-001");
-  const [userInput, setUserInput] = useState("");
-  const [interactionLog, setInteractionLog] = useState<string[]>([
-    "系统已启动，Summer 的灵魂正在苏醒...",
-  ]);
-  const [showAuth, setShowAuth] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  
-  // 自动滚动到底部
-  const logEndRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [interactionLog]);
+// 消息类型定义
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+}
 
+export default function PuppyForgeDashboard() {
+  const { user, token, logout } = useAuth();
+  
+  // 状态管理
+  const [soulId, setSoulId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [wsError, setWsError] = useState<string | null>(null);
+
+  // Refs
+  const wsRef = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // 自动滚动到底部
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // 1. 初始化 Soul ID
+  useEffect(() => {
+    if (user) {
+      // 生成 Soul ID (实际应从后端获取)
+      const generatedSoulId = `${user.email.split('@')[0]}-${user.id?.slice(-4) || '001'}`;
+      setSoulId(generatedSoulId);
+
+      // 添加欢迎消息
+      setMessages([
+        {
+          id: 'init-1',
+          role: 'system',
+          content: `系统已启动。欢迎回来，${user.email}。你的灵魂 (${generatedSoulId}) 正在同步中...`,
+          timestamp: new Date().toISOString()
+        }
+      ]);
+    } else {
+      // 未登录时清空 ID，但 SoulRadar 仍会显示“未连接”状态
+      setSoulId(null);
+      setMessages([]);
+      setIsConnected(false);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    }
+  }, [user]);
+
+  // 2. WebSocket 连接管理
+  useEffect(() => {
+    if (!user || !token || !soulId) {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setIsConnected(false);
+      return;
+    }
+
+    const connectWebSocket = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // 注意：这里假设后端 WS 地址，根据实际情况调整 host
+        const wsUrl = `${protocol}//${window.location.host}/api/v1/ws?soul_id=${soulId}&token=${token}`;
+        
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log('✅ WebSocket Connected');
+          setIsConnected(true);
+          setWsError(null);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'message' || data.type === 'response') {
+              setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: data.content || data.text,
+                timestamp: new Date().toISOString()
+              }]);
+            } else if (data.type === 'error') {
+              setWsError(data.message);
+            }
+          } catch (e) {
+            console.error('Parse error:', e);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log('❌ WebSocket Disconnected');
+          setIsConnected(false);
+        };
+
+        ws.onerror = (error) => {
+          console.error('WebSocket Error:', error);
+          setWsError('连接服务器失败，请检查网络');
+          setIsConnected(false);
+        };
+
+        wsRef.current = ws;
+      } catch (err) {
+        setWsError('无法建立连接');
+      }
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [user, token, soulId]);
+
+  // 3. 发送消息逻辑
   const handleSend = async () => {
-    if (!userInput.trim() || isSending) return;
-    
-    const message = userInput.trim();
-    setInteractionLog(prev => [...prev, `你: ${message}`]);
-    setUserInput("");
+    if (!inputValue.trim() || isSending || !wsRef.current || !isConnected) return;
+
+    const text = inputValue.trim();
+    setInputValue("");
     setIsSending(true);
 
-    // 模拟异步响应 (实际应调用 API)
-    setTimeout(() => {
-      setInteractionLog(prev => [...prev, `AI: 收到指令 "${message}"，灵魂能量波动正常。`]);
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, userMsg]);
+
+    try {
+      wsRef.current.send(JSON.stringify({
+        type: 'message',
+        content: text,
+        soul_id: soulId
+      }));
+    } catch (error) {
+      setWsError('发送失败，请重试');
+    } finally {
       setIsSending(false);
-    }, 1000);
+      inputRef.current?.focus();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -58,9 +188,16 @@ export default function PuppyForgeDashboard() {
     }
   };
 
+  const adjustTextareaHeight = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-zinc-950 text-white overflow-hidden">
-      {/* 导航栏 */}
+    <div className="flex flex-col h-screen bg-zinc-950 text-white overflow-hidden font-sans">
+      {/* --- 导航栏 --- */}
       <nav className="shrink-0 border-b border-white/10 bg-black/80 backdrop-blur-xl z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div 
@@ -78,85 +215,146 @@ export default function PuppyForgeDashboard() {
             </div>
           </div>
 
-          {user ? (
-            <div className="text-xs sm:text-sm text-cyan-400 font-medium bg-cyan-950/30 px-3 py-1 rounded-full border border-cyan-500/20">
-              {user.email}
-            </div>
-          ) : (
-            <button 
-              onClick={() => setShowAuth(true)} 
-              className="
-                relative overflow-hidden
-                px-4 sm:px-6 py-2 
-                bg-gradient-to-r from-cyan-500 to-blue-600 
-                text-white font-semibold rounded-full 
-                shadow-[0_0_15px_rgba(6,182,212,0.5)] 
-                hover:shadow-[0_0_25px_rgba(6,182,212,0.7)] 
-                hover:scale-105 active:scale-95 
-                transition-all duration-300 ease-out
-                border border-cyan-400/30
-                text-sm sm:text-base
-              "
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                连接灵魂
-              </span>
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-xs font-medium bg-cyan-950/30 px-3 py-1.5 rounded-full border border-cyan-500/20 text-cyan-300">
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  {isConnected ? '在线' : '连接中...'}
+                </div>
+                <button 
+                  onClick={logout}
+                  className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+                  title="断开连接"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span className="hidden sm:inline">退出</span>
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => setShowAuth(true)} 
+                className="
+                  relative overflow-hidden
+                  px-4 sm:px-6 py-2 
+                  bg-gradient-to-r from-cyan-500 to-blue-600 
+                  text-white font-semibold rounded-full 
+                  shadow-[0_0_15px_rgba(6,182,212,0.5)] 
+                  hover:shadow-[0_0_25px_rgba(6,182,212,0.7)] 
+                  hover:scale-105 active:scale-95 
+                  transition-all duration-300 ease-out
+                  border border-cyan-400/30
+                  text-sm sm:text-base
+                "
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  连接灵魂
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* 主内容区：SoulRadar */}
+      {/* --- 主内容区：SoulRadar (始终渲染) --- */}
       <main className="flex-1 relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col min-h-0">
-        <div className="flex-1 relative w-full h-full min-h-[400px]">
+        <div className="flex-1 relative w-full h-full min-h-[300px] sm:min-h-[400px]">
+          {/* 即使 soulId 为 null 也渲染，组件内部会处理“未连接”状态 */}
           <SoulRadar soulId={soulId} />
         </div>
       </main>
 
-      {/* 底部交互区：日志 + 输入框 */}
+      {/* --- 底部交互区 --- */}
       <footer className="shrink-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-2">
-        {/* 日志区域 (可选，如果不需要可隐藏) */}
-        <div className="h-24 mb-4 overflow-y-auto bg-zinc-900/50 rounded-xl border border-white/5 p-3 text-xs sm:text-sm text-zinc-400 font-mono scrollbar-thin scrollbar-thumb-zinc-700">
-          {interactionLog.map((log, i) => (
-            <div key={i} className="mb-1 last:mb-0">{log}</div>
-          ))}
-          <div ref={logEndRef} />
+        {/* 错误提示 */}
+        {wsError && (
+          <div className="mb-3 p-3 bg-red-950/50 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-200 text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{wsError}</span>
+            <button onClick={() => setWsError(null)} className="ml-auto hover:text-white">×</button>
+          </div>
+        )}
+
+        {/* 消息日志 */}
+        <div className="h-32 mb-4 overflow-y-auto bg-zinc-900/50 rounded-xl border border-white/5 p-4 text-xs sm:text-sm font-mono space-y-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          {messages.length === 0 ? (
+            <div className="text-zinc-600 text-center mt-10">
+              {user ? '等待指令...' : '请先连接灵魂以激活对话'}
+            </div>
+          ) : (
+            messages.map((msg, i) => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] p-2 rounded-lg ${
+                  msg.role === 'user' ? 'bg-cyan-900/30 text-cyan-100 border border-cyan-500/20' : 
+                  msg.role === 'system' ? 'bg-zinc-800/50 text-zinc-400 border border-zinc-700' :
+                  'bg-zinc-800/80 text-zinc-200 border border-white/5'
+                }`}>
+                  <span className="opacity-50 text-[10px] block mb-1">{msg.role.toUpperCase()}</span>
+                  {msg.content}
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* 输入框 */}
-        <div className="relative flex items-end gap-2 bg-zinc-900/80 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-lg focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/50 transition-all">
+        <div className={`relative flex items-end gap-2 bg-zinc-900/80 backdrop-blur-md p-2 rounded-2xl border transition-all duration-300 ${
+          !user ? 'border-zinc-800 opacity-60 grayscale' : 
+          isConnected ? 'border-white/10 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/50 shadow-lg' : 
+          'border-yellow-500/30'
+        }`}>
           <textarea
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="与灵魂对话..."
-            disabled={isSending || !user}
-            rows={1}
-            className="w-full bg-transparent border-0 text-white placeholder-zinc-500 focus:ring-0 resize-none py-3 px-3 max-h-32 min-h-[44px] scrollbar-none"
-            style={{ height: 'auto', minHeight: '44px' }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = `${Math.min(target.scrollHeight, 128)}px`;
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              adjustTextareaHeight();
             }}
+            onKeyDown={handleKeyDown}
+            placeholder={user ? (isConnected ? "与灵魂对话..." : "连接中，请稍候...") : "请先连接灵魂"}
+            disabled={!user || !isConnected || isSending}
+            rows={1}
+            className="w-full bg-transparent border-0 text-white placeholder-zinc-500 focus:ring-0 resize-none py-3 px-3 max-h-32 min-h-[44px] scrollbar-none disabled:cursor-not-allowed"
+            style={{ height: 'auto' }}
           />
           <button
             onClick={handleSend}
-            disabled={!userInput.trim() || isSending || !user}
+            disabled={!inputValue.trim() || isSending || !user || !isConnected}
             className="mb-1 p-3 rounded-xl bg-cyan-600 text-white disabled:bg-zinc-800 disabled:text-zinc-600 hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-900/20"
           >
             {isSending ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <Send className="w-5 h-5" />
             )}
           </button>
         </div>
         
+        {/* 优化后的未登录提示 */}
         {!user && (
-          <div className="text-center mt-2 text-xs text-zinc-500">
-            请先连接灵魂以启用交互功能
+          <div className="mt-3 flex justify-center">
+            <div 
+              onClick={() => setShowAuth(true)}
+              className="
+                group flex items-center gap-2 
+                px-4 py-2 
+                bg-zinc-900/50 hover:bg-zinc-800/80 
+                border border-zinc-700 hover:border-cyan-500/50 
+                rounded-full 
+                cursor-pointer 
+                transition-all duration-300 
+                hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]
+                hover:-translate-y-0.5
+              "
+            >
+              <div className="w-2 h-2 rounded-full bg-zinc-500 group-hover:bg-cyan-400 transition-colors animate-pulse" />
+              <span className="text-xs text-zinc-400 group-hover:text-cyan-300 font-medium">
+                未检测到灵魂连接，请点击此处激活
+              </span>
+              <Zap className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
+            </div>
           </div>
         )}
       </footer>
