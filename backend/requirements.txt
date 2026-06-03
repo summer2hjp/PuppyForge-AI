@@ -55,4 +55,4 @@ passlib[bcrypt]==1.7.4
 pipeline
 tenacity
 wasmtime
-email-validator>=2.1.0
+email-validator>=2.3.0
