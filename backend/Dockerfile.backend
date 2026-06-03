@@ -1,0 +1,42 @@
+FROM python:3.13-slim
+
+# 设置环境变量
+# 防止 Python 生成 .pyc 文件
+ENV PYTHONDONTWRITEBYTECODE=1
+# 防止 Python 缓冲输出，方便查看日志
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# 安装系统级依赖 (根据项目实际需求调整，例如 postgres-client, curl 等)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装 Python 依赖
+# 使用 --no-cache-dir 减小镜像体积
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制项目源代码
+COPY . .
+
+# 创建非 root 用户 (可选，但在生产环境推荐)
+# RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# USER appuser
+
+# 暴露后端端口
+EXPOSE 8000
+
+# 健康检查 (可选，配合 docker-compose healthcheck 使用)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 启动命令
+# 假设主应用入口为 app.main:app，请根据实际项目结构调整
+# host 0.0.0.0 允许外部访问
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

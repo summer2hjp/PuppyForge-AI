@@ -4,6 +4,25 @@ from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+def safe_int_env(key: str, default: int) -> int:
+    """安全地获取环境变量并转换为整数，处理空字符串情况"""
+    val = os.getenv(key)
+    if val is None or val.strip() == "":
+        return default
+    try:
+        return int(val)
+    except ValueError:
+        return default
+
+def safe_float_env(key: str, default: float) -> float:
+    """安全地获取环境变量并转换为浮点数"""
+    val = os.getenv(key)
+    if val is None or val.strip() == "":
+        return default
+    try:
+        return float(val)
+    except ValueError:
+        return default
 
 class Settings(BaseSettings):
     """
@@ -20,7 +39,8 @@ class Settings(BaseSettings):
     # --- 服务器配置 ---
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    ALLOWED_ORIGINS: List[str] = ["*"]  # 生产环境请限制具体域名
+    #ALLOWED_ORIGINS: List[str] = ["*"]  # 生产环境请限制具体域名
+    ALLOWED_ORIGINS: str = "*" 
 
     # --- 安全配置 ---
     # 强烈建议在生产环境中通过环境变量设置此密钥 (openssl rand -hex 32)
@@ -62,9 +82,9 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
     # --- LLM 配置 ---
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5.4-mini")
-    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
-    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "1024"))
+    LLM_MODEL: str = os.getenv("LLM_MODEL") or "gpt-5.3-codex"
+    LLM_TEMPERATURE: float = safe_float_env("LLM_TEMPERATURE", 0.7)
+    LLM_MAX_TOKENS: int = safe_int_env("LLM_MAX_TOKENS", 1024)
     
     # --- Soul 配置 ---
     DEFAULT_SOUL_FUEL: float = 100.0
@@ -76,6 +96,34 @@ class Settings(BaseSettings):
     SOUL_FUEL_DECAY_RATE: float = 0.5
     TRAIT_DRIFT_INTENSITY: float = 0.1
     
+    @property
+    def allowed_origins_list(self) -> List[str]:
+        """
+        将 ALLOWED_ORIGINS 字符串转换为列表。
+        支持格式: 
+          1. "*" -> ["*"]
+          2. "http://a.com,http://b.com" -> ["http://a.com", "http://b.com"]
+          3. "["http://a.com","http://b.com"]" (JSON) -> 自动解析
+        """
+        if not self.ALLOWED_ORIGINS:
+
+            return []
+        
+        # 如果是通配符，直接返回
+        if self.ALLOWED_ORIGINS.strip() == "*":
+            return ["*"]
+        
+        # 尝试处理 JSON 格式 (如果用户传了 JSON 字符串)
+        if self.ALLOWED_ORIGINS.startswith("[") and self.ALLOWED_ORIGINS.endswith("]"):
+            import json
+            try:
+                return json.loads(self.ALLOWED_ORIGINS)
+            except json.JSONDecodeError:
+                pass
+        
+        # 默认按逗号分割
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
     # Pydantic Settings 配置
     model_config = SettingsConfigDict(
         env_file=".env",

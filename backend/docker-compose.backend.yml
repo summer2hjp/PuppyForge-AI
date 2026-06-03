@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: puppyforge-postgres
+    restart: unless-stopped
+    env_file:
+      - .env.backend
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_DB: ${POSTGRES_DB:-puppyforge_db}
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c listen_addresses=0.0.0.0 
+      -c port=5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432" 
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-puppyforge_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: puppyforge-redis
+    restart: unless-stopped
+    env_file:
+      - .env.backend
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-admin}
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-admin123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: puppyforge-backend
+    restart: unless-stopped
+    env_file:
+      - .env.backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@${POSTGRES_HOST:-postgres}:${POSTGRES_POPRT:-5432}/${POSTGRES_DB:-puppyforge_db}
+      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-net
+    volumes:
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --log-level info
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  backend-net:
+    driver: bridge

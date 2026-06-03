@@ -95,7 +95,8 @@ async def security_middleware(request: Request, call_next):
 # CORS 中间件配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    #allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
