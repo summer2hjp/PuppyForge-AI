@@ -210,15 +210,23 @@ async def google_login():
 
 @router.get("/github/login")
 async def github_login():
-    """GitHub OAuth 登录入口"""
-    return {
-        "url": (
-            f"https://github.com/login/oauth/authorize?"
-            f"client_id={settings.GITHUB_CLIENT_ID}"
-            f"&redirect_uri={settings.GITHUB_REDIRECT_URI}"
-            f"&scope=user:email"
-        )
+    """
+    GitHub OAuth 登录入口
+    重定向用户到 GitHub 授权页面
+    """
+    # 构造 GitHub 授权 URL
+    params = {
+        "client_id": settings.GITHUB_CLIENT_ID,
+        "redirect_uri": settings.GITHUB_REDIRECT_URI,
+        "scope": "user:email", # 申请读取用户邮箱权限
+        "state": "puppyforge_state" # 可选：用于防 CSRF，生产环境建议生成随机数并存入 Session/Redis
     }
+    
+    query_string = urllib.parse.urlencode(params)
+    github_auth_url = f"https://github.com/login/oauth/authorize?{query_string}"
+    
+    # 重定向到 GitHub
+    return RedirectResponse(url=github_auth_url)
 
 @router.get("/google/callback")
 async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
@@ -284,10 +292,126 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
             )
 
 @router.get("/github/callback")
-async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
-    """GitHub OAuth 回调"""
-    # 类似 Google 的实现逻辑
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="GitHub OAuth 回调暂未完全实现"
-    )
+async def github_callback(code: str, state: str = None, db: AsyncSession = Depends(get_db)):
+    """
+    GitHub OAuth 回调处理
+    1. 用 code 换取 access_token
+    2. 获取用户信息
+    3. 查找或创建用户
+    4. 生成 JWT Token
+    5. 重定向回前端 (带 Hash)
+    """
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+
+    frontend_callback_url = settings.FRONTEND_URL or "http://192.168.3.106:3000"
+    
+    try:
+        # 1. 用 code 换取 Access Token
+        async with httpx.AsyncClient() as client:
+            token_resp = await client.post(
+                "https://github.com/login/oauth/access_token",
+                data={
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": settings.GITHUB_REDIRECT_URI
+                },
+                headers={"Accept": "application/json"}
+            )
+            token_resp.raise_for_status()
+            token_data = token_resp.json()
+            
+            if "error" in token_data:
+                raise HTTPException(status_code=400, detail=f"GitHub API Error: {token_data['error']}")
+            
+            gh_access_token = token_data.get("access_token")
+
+        # 2. 获取 GitHub 用户信息
+        async with httpx.AsyncClient() as client:
+            user_resp = await client.get(
+                "https://api.github.com/user",
+                headers={
+                    "Authorization": f"token {gh_access_token}",
+                    "Accept": "application/json"
+                }
+            )
+            user_resp.raise_for_status()
+            gh_user = user_resp.json()
+            
+            # 获取邮箱 (GitHub 邮箱可能是私有的，需要额外请求或处理)
+            email = gh_user.get("email")
+            if not email:
+                # 尝试从 emails 列表获取公共邮箱
+                emails_resp = await client.get(
+                    "https://api.github.com/user/emails",
+                    headers={"Authorization": f"token {gh_access_token}"}
+                )
+                emails = emails_resp.json()
+                for e in emails:
+                    if e.get("primary") and e.get("verified"):
+                        email = e.get("email")
+                        break
+            
+            if not email:
+                 # 如果实在没有邮箱，用 ID 构造一个虚拟的 (或者拒绝登录)
+                 email = f"{gh_user['id']}+{gh_user['login']}@users.noreply.github.com"
+
+        # 3. 查找或创建用户
+        from sqlmodel import select
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalars().first()
+
+        if not user:
+            # 创建新用户
+            user = User(
+                email=email,
+                full_name=gh_user.get("name") or gh_user.get("login"),
+                avatar_url=gh_user.get("avatar_url"),
+                hashed_password="", # OAuth 用户不需要密码
+                role=UserRole.USER,
+                is_active=True,
+                is_verified=True # GitHub 邮箱通常视为已验证
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+        else:
+            # 更新头像等信息
+            user.avatar_url = gh_user.get("avatar_url")
+            user.full_name = gh_user.get("name") or user.full_name
+            await db.commit()
+            await db.refresh(user)
+
+        # 4. 生成 JWT Token
+        access_token = create_access_token(data={"sub": str(user.id)})
+        refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+        # 5. 构造重定向 URL (使用 Hash 传递敏感信息，避免留在服务器日志中)
+        # 格式: http://frontend/auth/callback#token=xxx&user={...}
+        user_dict = {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "avatar_url": user.avatar_url,
+            "role": user.role.value
+        }
+        
+        # 对 user 对象进行 URL 编码
+        user_encoded = urllib.parse.quote(json.dumps(user_dict), safe='')
+        
+        redirect_hash = f"token={access_token}&refreshToken={refresh_token}&user={user_encoded}"
+        final_redirect_url = f"{frontend_callback_url}/auth/callback?provider=github#{redirect_hash}"
+
+        return RedirectResponse(url=final_redirect_url)
+
+    except httpx.HTTPError as e:
+        print(f"GitHub HTTP Error: {e}")
+        # 发生错误时重定向回前端并带上错误信息
+        error_url = f"{frontend_callback_url}/auth/callback?error=github_communication_failed"
+        return RedirectResponse(url=error_url)
+        
+    except Exception as e:
+        print(f"Internal OAuth Error: {e}")
+        error_url = f"{frontend_callback_url}/auth/callback?error=internal_server_error"
+        return RedirectResponse(url=error_url)
