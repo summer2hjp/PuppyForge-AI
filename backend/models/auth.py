@@ -4,7 +4,7 @@ from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
 
 from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy import Column, String, DateTime, Boolean, Integer, Text
+from sqlalchemy import Column, String, DateTime, Boolean, BigInteger, Text
 from sqlalchemy.orm import relationship
 
 # 防止循环导入
@@ -56,14 +56,25 @@ class User(UserBase, table=True):
     """用户数据库模型"""
     __tablename__ = "users"
     
-    id: int = Field(default_factory=lambda: uuid.uuid4().int >> 96, primary_key=True, description="用户ID (UUID缩短版)")
-    # 或者使用自增ID: id: Optional[int] = Field(default=None, primary_key=True)
+    # 【关键修复】使用 BigInteger 替代默认 Integer，防止 UUID 缩短后的数值溢出
+    # uuid.uuid4().int >> 96 生成的是 32-bit 到 128-bit 之间的大整数，必须用 BIGINT 存储
+    id: int = Field(
+        default_factory=lambda: uuid.uuid4().int >> 96, 
+        primary_key=True, 
+        index=True,
+        sa_type=BigInteger,  # 强制映射为 PostgreSQL BIGINT
+        description="用户ID (基于UUID缩短的BigInt)"
+    )
     
     hashed_password: str = Field(..., sa_column=Column(String(255)), description="加密后的密码")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = Field(None, sa_column=Column(DateTime, onupdate=lambda: datetime.now(timezone.utc)))
+    updated_at: Optional[datetime] = Field(
+        None, 
+        sa_column=Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+    )
 
     # --- 反向关系定义 (用于级联查询) ---
+    # 注意：确保引用的模型已正确导入且定义了 back_populates
     souls: List["PuppySoul"] = Relationship(back_populates="user", cascade_delete=True)
     interactions: List["Interaction"] = Relationship(back_populates="user", cascade_delete=True)
     diagnoses: List["Diagnosis"] = Relationship(back_populates="user", cascade_delete=True)
