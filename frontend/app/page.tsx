@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, Zap, AlertCircle, Loader2, LogOut } from 'lucide-react';
+import { Send, Zap, AlertCircle, Loader2, LogOut, X } from 'lucide-react';
 
-// 动态导入 SoulRadar (禁用 SSR)
+// 动态导入 SoulRadar (禁用 SSR 以避免 hydration 错误)
 const SoulRadar = dynamic(() => import('@/components/SoulRadar'), { 
   ssr: false,
   loading: () => (
@@ -28,7 +29,9 @@ interface Message {
 }
 
 export default function PuppyForgeDashboard() {
-  const { user, token, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, token, logout, setUser, login } = useAuth();
   
   // 状态管理
   const [soulId, setSoulId] = useState<string | null>(null);
@@ -38,41 +41,64 @@ export default function PuppyForgeDashboard() {
   const [isSending, setIsSending] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [wsError, setWsError] = useState<string | null>(null);
+  const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
 
   // Refs
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // 自动滚动到底部
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // --- 1. OAuth 回调处理 ---
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (typeof window !== 'undefined' && searchParams) {
+      const urlToken = searchParams.get('token');
+      const urlRefreshToken = searchParams.get('refreshToken');
+      const urlUserStr = searchParams.get('user');
 
-  // 1. 初始化 Soul ID
+      if (urlToken && urlUserStr) {
+        setIsProcessingOAuth(true);
+        try {
+          const urlUser = JSON.parse(decodeURIComponent(urlUserStr));
+          // 更新 Zustand 状态
+          useAuth.setState({ 
+            user: urlUser, 
+            token: urlToken, 
+            refreshToken: urlRefreshToken,
+            loading: false 
+          });
+          // 清理 URL 参数
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setIsProcessingOAuth(false);
+        } catch (e) {
+          console.error('OAuth 解析失败', e);
+          setWsError('登录信息解析失败，请重试');
+          setIsProcessingOAuth(false);
+        }
+      }
+    }
+  }, [searchParams]);
+
+  // --- 2. 初始化 Soul ID 和欢迎语 ---
   useEffect(() => {
     if (user) {
-      // 生成 Soul ID (实际应从后端获取)
-      const generatedSoulId = `${user.email.split('@')[0]}-${user.id?.slice(-4) || '001'}`;
+      // 生成 Soul ID
+      const userIdStr = user.id ? String(user.id) : '0000';
+      const generatedSoulId = `${user.email.split('@')[0]}-${String(user.id).slice(-4) || '001'}`;
       setSoulId(generatedSoulId);
 
-      // 添加欢迎消息
-      setMessages([
-        {
-          id: 'init-1',
-          role: 'system',
-          content: `系统已启动。欢迎回来，${user.email}。你的灵魂 (${generatedSoulId}) 正在同步中...`,
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      // 添加欢迎语
+        setMessages([
+          {
+            id: 'init-1',
+            role: 'system',
+            content: `系统已启动。欢迎回来，${user.name || user.email}。你的灵魂 (${generatedSoulId}) 正在同步中...`,
+            timestamp: new Date().toISOString()
+          }
+        ]);
     } else {
-      // 未登录时清空 ID，但 SoulRadar 仍会显示“未连接”状态
       setSoulId(null);
-      setMessages([]);
+      // 未登录时不清空消息历史，以便用户登录后查看，或者根据需求清空
+      // setMessages([]); 
       setIsConnected(false);
       if (wsRef.current) {
         wsRef.current.close();
@@ -81,7 +107,7 @@ export default function PuppyForgeDashboard() {
     }
   }, [user]);
 
-  // 2. WebSocket 连接管理
+  // --- 3. WebSocket 连接管理 ---
   useEffect(() => {
     if (!user || !token || !soulId) {
       if (wsRef.current) {
@@ -96,7 +122,9 @@ export default function PuppyForgeDashboard() {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // 注意：这里假设后端 WS 地址，根据实际情况调整 host
-        const wsUrl = `${protocol}//${window.location.host}/api/v1/ws?soul_id=${soulId}&token=${token}`;
+        // 生产环境建议配置 NEXT_PUBLIC_WS_URL
+        const wsHost = process.env.NEXT_PUBLIC_WS_URL || window.location.host;
+        const wsUrl = `${protocol}//${wsHost}/api/v1/ws?soul_id=${soulId}&token=${token}`;
         
         const ws = new WebSocket(wsUrl);
         
@@ -118,6 +146,8 @@ export default function PuppyForgeDashboard() {
               }]);
             } else if (data.type === 'error') {
               setWsError(data.message);
+            } else if (data.type === 'ping') {
+               ws.send(JSON.stringify({ type: 'pong' }));
             }
           } catch (e) {
             console.error('Parse error:', e);
@@ -127,6 +157,7 @@ export default function PuppyForgeDashboard() {
         ws.onclose = () => {
           console.log('❌ WebSocket Disconnected');
           setIsConnected(false);
+          // 可选：实现指数退避重连逻辑
         };
 
         ws.onerror = (error) => {
@@ -151,7 +182,7 @@ export default function PuppyForgeDashboard() {
     };
   }, [user, token, soulId]);
 
-  // 3. 发送消息逻辑
+  // --- 4. 发送消息逻辑 ---
   const handleSend = async () => {
     if (!inputValue.trim() || isSending || !wsRef.current || !isConnected) return;
 
@@ -175,6 +206,12 @@ export default function PuppyForgeDashboard() {
       }));
     } catch (error) {
       setWsError('发送失败，请重试');
+      setMessages(prev => [...prev, {
+        id: 'err-' + Date.now(),
+        role: 'system',
+        content: '消息发送失败，连接可能已断开。',
+        timestamp: new Date().toISOString()
+      }]);
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
@@ -194,6 +231,11 @@ export default function PuppyForgeDashboard() {
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
     }
   };
+
+  // 自动滚动到底部
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-screen bg-zinc-950 text-white overflow-hidden font-sans">
@@ -260,8 +302,16 @@ export default function PuppyForgeDashboard() {
       {/* --- 主内容区：SoulRadar (始终渲染) --- */}
       <main className="flex-1 relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col min-h-0">
         <div className="flex-1 relative w-full h-full min-h-[300px] sm:min-h-[400px]">
-          {/* 即使 soulId 为 null 也渲染，组件内部会处理“未连接”状态 */}
-          <SoulRadar soulId={soulId} />
+          {isProcessingOAuth ? (
+             <div className="w-full h-full flex items-center justify-center bg-zinc-900/30 rounded-2xl border border-dashed border-cyan-500/30">
+               <div className="flex flex-col items-center gap-3 text-cyan-400">
+                 <Loader2 className="w-8 h-8 animate-spin" />
+                 <span>正在同步灵魂数据...</span>
+               </div>
+             </div>
+          ) : (
+            <SoulRadar soulId={soulId} />
+          )}
         </div>
       </main>
 
@@ -314,14 +364,14 @@ export default function PuppyForgeDashboard() {
             }}
             onKeyDown={handleKeyDown}
             placeholder={user ? (isConnected ? "与灵魂对话..." : "连接中，请稍候...") : "请先连接灵魂"}
-            disabled={!user || !isConnected || isSending}
+            disabled={!user || !isConnected || isSending || isProcessingOAuth}
             rows={1}
             className="w-full bg-transparent border-0 text-white placeholder-zinc-500 focus:ring-0 resize-none py-3 px-3 max-h-32 min-h-[44px] scrollbar-none disabled:cursor-not-allowed"
             style={{ height: 'auto' }}
           />
           <button
             onClick={handleSend}
-            disabled={!inputValue.trim() || isSending || !user || !isConnected}
+            disabled={!inputValue.trim() || isSending || !user || !isConnected || isProcessingOAuth}
             className="mb-1 p-3 rounded-xl bg-cyan-600 text-white disabled:bg-zinc-800 disabled:text-zinc-600 hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-900/20"
           >
             {isSending ? (
@@ -333,7 +383,7 @@ export default function PuppyForgeDashboard() {
         </div>
         
         {/* 优化后的未登录提示 */}
-        {!user && (
+        {!user && !isProcessingOAuth && (
           <div className="mt-3 flex justify-center">
             <div 
               onClick={() => setShowAuth(true)}

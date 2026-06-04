@@ -1,20 +1,21 @@
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  avatar?: string;
-  role?: 'user' | 'admin' | 'moderator';
-  createdAt?: string;
+  name?: string | null;
+  avatar?: string | null;
+  role: 'user' | 'admin' | 'moderator';
+  createdAt: string;
+  provider?: string;
+  providerId?: string | null;
 }
 
 export interface AuthPayload {
   userId: string;
   email: string;
-  role: string;
+  role: User['role'];
 }
 
-export interface AuthResponse {
-  user: User;
+export interface TokenPair {
   token: string;
   refreshToken: string;
 }

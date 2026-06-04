@@ -1,85 +1,39 @@
-// app/api/auth/register/route.ts
-import { generateTokens, signRefreshToken } from '@/lib/auth';
-import { createUser } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { jsonResponse, parseBody } from '../_utils';
 
-async function readRequestBody(request: Request): Promise<Record<string, unknown> | null> {
-  const maybeRequest = request as {
-    json?: () => Promise<unknown>;
-    body?: unknown;
-  };
-  if (typeof maybeRequest.json === 'function') {
-    try {
-      const body = await maybeRequest.json();
-      return body && typeof body === 'object' ? (body as Record<string, unknown>) : null;
-    } catch {
-      return null;
-    }
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.3.160:8000';
+
+export async function POST(request: NextRequest) {
+  const body = await parseBody(request);
+  
+  // 前端已验证过，这里可做二次检查或直接转发
+  if (!body?.email || !body?.password) {
+    return jsonResponse({ message: '邮箱和密码不能为空' }, 400);
   }
 
-  const body = maybeRequest.body;
-  if (body && typeof body === 'object' && !('getReader' in (body as Record<string, unknown>))) {
-    return body as Record<string, unknown>;
-  }
-  return null;
-}
-
-function jsonResponse(payload: unknown, status = 200): Response {
-  if (typeof Response === 'undefined') {
-    return { status, json: async () => payload } as unknown as Response;
-  }
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
-}
-
-export async function POST(request: Request) {
   try {
-    const body = await readRequestBody(request);
-    if (!body) {
-      return jsonResponse({ message: '请求体格式错误' }, 400);
-    }
-
-    const email = typeof body.email === 'string' ? body.email : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-    const confirmPassword = typeof body.confirmPassword === 'string' ? body.confirmPassword : '';
-
-    if (!email || !password) {
-      return jsonResponse({ message: '邮箱和密码不能为空' }, 400);
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return jsonResponse({ message: '邮箱格式不正确' }, 400);
-    }
-    if (password.length < 8) {
-      return jsonResponse({ message: '密码长度至少为8位' }, 400);
-    }
-    if (!confirmPassword || password !== confirmPassword) {
-      return jsonResponse({ message: '两次输入的密码不匹配' }, 400);
-    }
-
-    const user = await createUser(email, password);
-    if (!user) {
-      return jsonResponse({ message: '该邮箱已被注册' }, 409);
-    }
-
-    const generated = await generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: user.role ?? 'user',
+    // 直接转发前端构造好的 { email, password, full_name }
+    const res = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-    const tokenPayload =
-      typeof generated === 'string'
-        ? { token: generated, refreshToken: await signRefreshToken({ userId: user.id, email: user.email, role: user.role ?? 'user' }) }
-        : generated;
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      // FastAPI 通常返回 detail 字段
+      return jsonResponse({ message: data.detail || '注册失败' }, res.status);
+    }
 
     return jsonResponse({
-      user,
-      token: tokenPayload.token,
-      refreshToken: tokenPayload.refreshToken,
-      message: '注册成功',
-    }, 201);
+      user: data.user,
+      token: data.access_token || data.token, // 兼容不同命名
+      refreshToken: data.refresh_token || data.refreshToken,
+      message: data.message
+    }, res.status);
   } catch (error) {
-    console.error('[REGISTER_ERROR]', error);
-    return jsonResponse({ message: '注册失败' }, 500);
+    console.error('[PROXY_REGISTER_ERROR]', error);
+    return jsonResponse({ message: '后端服务不可用' }, 503);
   }
 }
