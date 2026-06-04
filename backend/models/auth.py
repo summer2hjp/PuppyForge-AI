@@ -35,7 +35,7 @@ class UserCreate(SQLModel):
     """用户注册/创建请求模型"""
     email: str = Field(..., max_length=255)
     password: str = Field(..., min_length=6, max_length=72, description="密码 (6-72字符)")
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(None, max_length=100, description="全名") 
 
 
 class UserRead(UserBase):
