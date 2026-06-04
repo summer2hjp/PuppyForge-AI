@@ -152,6 +152,7 @@ async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     hashed_password = get_password_hash(form_data.password)
     new_user = User(
         email=form_data.email,
+        full_name=form_data.full_name,
         hashed_password=hashed_password,
         role=UserRole.USER
     )
@@ -160,7 +161,7 @@ async def register(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()  # 异步提交
     await db.refresh(new_user)  # 异步刷新
     
-    access_token = create_access_token(data={"sub": new_user.id})
+    access_token = create_access_token(data={"sub": str(new_user.id)}) 
     
     return {
         "user": UserRead.model_validate(new_user),
