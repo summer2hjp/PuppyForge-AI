@@ -51,26 +51,26 @@ class UserUpdate(SQLModel):
     avatar_url: Optional[str] = None
     is_active: Optional[bool] = None
 
-
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+    
 class User(UserBase, table=True):
     """用户数据库模型"""
     __tablename__ = "users"
-    
-    # 【关键修复】使用 BigInteger 替代默认 Integer，防止 UUID 缩短后的数值溢出
-    # uuid.uuid4().int >> 96 生成的是 32-bit 到 128-bit 之间的大整数，必须用 BIGINT 存储
+
     id: int = Field(
         default_factory=lambda: uuid.uuid4().int >> 96, 
         primary_key=True, 
         index=True,
-        sa_type=BigInteger,  # 强制映射为 PostgreSQL BIGINT
+        sa_type=BigInteger,
         description="用户ID (基于UUID缩短的BigInt)"
     )
     
     hashed_password: str = Field(..., sa_column=Column(String(255)), description="加密后的密码")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=get_utc_now, sa_column=Column(DateTime))    
     updated_at: Optional[datetime] = Field(
         None, 
-        sa_column=Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
+        sa_column=Column(DateTime, onupdate=get_utc_now)
     )
 
     # --- 反向关系定义 (用于级联查询) ---
