@@ -31,8 +31,20 @@ export interface AuthState {
   refreshSession: () => Promise<boolean>;
 }
 
-const getApiBase = () =>
-  typeof window !== 'undefined' ? window.location.origin : '';
+const getApiBase = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin; 
+  }
+  return '';
+};
+
+const getBackendUrl = () => {
+  if (typeof window !== 'undefined') {
+    // 确保 .env.local 中定义了 NEXT_PUBLIC_BACKEND_URL=http://192.168.3.160:8000
+    return process.env.NEXT_PUBLIC_BACKEND_URL || window.location.origin;
+  }
+  return '';
+};
 
 export const useAuth = create<AuthState>()(
   persist(
@@ -106,8 +118,24 @@ export const useAuth = create<AuthState>()(
       },
 
       loginWithOAuth: async (provider: 'google' | 'github') => {
-        if (typeof window !== 'undefined') {
-          window.location.href = `${getApiBase()}/api/auth/callback/${provider}`;
+        console.log(`[DEBUG useAuth] 开始 OAuth 登录流程，Provider: ${provider}`); 
+        if (typeof window === 'undefined') {
+          console.warn('[DEBUG useAuth] 服务端渲染环境，跳过跳转');
+          return;
+        }
+        
+        const backendUrl = getBackendUrl();
+        const oauthUrl = `${backendUrl}/api/v1/auth/${provider}/login`;
+        
+        console.log(`[DEBUG useAuth] 即将跳转 URL: ${oauthUrl}`);
+        console.log(`[DEBUG useAuth] 当前 Backend URL 配置: ${backendUrl}`);
+
+        try {
+          // 执行跳转
+          window.location.href = oauthUrl;
+        } catch (error) {
+          console.error('[DEBUG useAuth] 跳转失败:', error);
+          set({ error: 'OAuth 跳转失败，请检查控制台日志' });
         }
       },
 

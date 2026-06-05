@@ -1,57 +1,83 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, MeshDistortMaterial, Float } from '@react-three/drei';
+import { OrbitControls, Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface SoulRadarProps {
-  soulId: string | null; // 允许 null
+  soulId: string | null;
 }
 
-function SoulMesh({ intensity, isActive }: { intensity: number; isActive: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
+function ParticleSoul({ intensity, isActive }: { intensity: number; isActive: boolean }) {
+  const pointsRef = useRef<THREE.Points>(null);
   
-  const getColor = () => {
-    if (!isActive) return '#3f3f46'; // 未激活：深灰色
-    if (intensity > 0.8) return '#ff2d55'; 
-    if (intensity > 0.5) return '#ff9f43'; 
-    return '#00d2d3'; 
-  };
+  // 固定粒子数量，避免 Buffer 重建错误
+  const PARTICLE_COUNT = 1200;
+  const BASE_RADIUS = 1.7; // 球体增大 15% (原 1.05 -> 1.2)
+
+  // 预计算粒子位置 (斐波那契球体分布)
+  const { positions } = useMemo(() => {
+    const pos = new Float32Array(PARTICLE_COUNT * 3);
+    
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const phi = Math.acos(-1 + (2 * i) / PARTICLE_COUNT);
+      const theta = Math.sqrt(PARTICLE_COUNT * Math.PI) * phi;
+      
+      const x = BASE_RADIUS * Math.cos(theta) * Math.sin(phi);
+      const y = BASE_RADIUS * Math.sin(theta) * Math.sin(phi);
+      const z = BASE_RADIUS * Math.cos(phi);
+
+      pos[i * 3] = x;
+      pos[i * 3 + 1] = y;
+      pos[i * 3 + 2] = z;
+    }
+    
+    return { positions: pos };
+  }, []);
 
   useFrame((state) => {
-    if (meshRef.current) {
-      if (!isActive) {
-        // 休眠状态：极慢旋转，无呼吸
-        meshRef.current.rotation.y = state.clock.elapsedTime * 0.05;
-        meshRef.current.scale.set(1.2, 1.2, 1.2);
-      } else {
-        // 激活状态：正常旋转 + 呼吸
-        meshRef.current.rotation.x = state.clock.elapsedTime * 0.2;
-        meshRef.current.rotation.y = state.clock.elapsedTime * 0.3;
-        const scale = 1.35 + Math.sin(state.clock.elapsedTime * 2) * 0.05 * intensity;
-        meshRef.current.scale.set(scale, scale, scale);
-      }
+    if (pointsRef.current) {
+      // 1. 移除旋转 (保持静止)
+      // pointsRef.current.rotation... (已移除)
+
+      // 2. 心跳律动效果 (整体缩放)
+      const time = state.clock.elapsedTime;
+      // 模拟心跳节奏：快缩 - 慢舒 - 停顿 (使用 sin^2 制造脉冲感)
+      // 频率：约 1.5Hz (正常心率)
+      const heartbeat = Math.pow(Math.sin(time * 3), 2); 
+      
+      // 基础缩放 + 心跳幅度 (激活时明显，休眠时微弱)
+      const pulseScale = isActive ? 1 + (heartbeat * 0.08) : 1 + (heartbeat * 0.02);
+      
+      pointsRef.current.scale.set(pulseScale, pulseScale, pulseScale);
     }
   });
 
+  // 颜色逻辑：未登录白色，登录后随能量变化
+  const getParticleColor = () => {
+    if (!isActive) return '#f0f0f0'; // 未登录：纯白
+    if (intensity > 0.8) return '#ff2d55'; // 高能量：红
+    if (intensity > 0.5) return '#ff9f43'; // 中能量：橙
+    return '#00d2d3'; // 低能量：青
+  };
+
   return (
-    <Float speed={isActive ? 2 : 0.5} rotationIntensity={isActive ? 0.5 : 0.1} floatIntensity={isActive ? 0.5 : 0.1}>
-      <Sphere ref={meshRef} args={[1, 64, 64]}>
-        <MeshDistortMaterial
-          color={getColor()}
-          attach="material"
-          distort={isActive ? 0.4 * intensity : 0.1}
-          speed={isActive ? 2 : 0.5}
-          roughness={isActive ? 0.1 : 0.8}
-          metalness={isActive ? 0.8 : 0.2}
-          clearcoat={isActive ? 1 : 0}
-          clearcoatRoughness={0.1}
-          emissive={getColor()}
-          emissiveIntensity={isActive ? 0.2 : 0.05}
+    <group>
+      <Points ref={pointsRef} positions={positions} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          color={getParticleColor()}
+          size={isActive ? 0.064 : 0.064} // 大小缩小 20% (原 0.08 -> 0.064)
+          sizeAttenuation={true}
+          depthWrite={false}
+          opacity={0.4} // 亮度减小 30% (原 0.9 -> 0.6)
+          blending={THREE.NormalBlending} // 普通混合，避免过亮
+          vertexColors={false}
+          toneMapped={false}
         />
-      </Sphere>
-    </Float>
+      </Points>
+    </group>
   );
 }
 
@@ -88,31 +114,27 @@ export default function SoulRadar({ soulId }: SoulRadarProps) {
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
       
       <Canvas
-        camera={{ position: [0, 0, 4], fov: 45 }}
+        camera={{ position: [0, 0, 4.5], fov: 65 }} // 调整焦距增强发散感
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
         <color attach="background" args={['#09090b']} />
-        <ambientLight intensity={isActive ? 0.5 : 0.2} />
-        <pointLight position={[10, 10, 10]} intensity={isActive ? 1.5 : 0.3} color="#ffffff" />
-        <pointLight position={[-10, -10, -10]} intensity={isActive ? 0.5 : 0.1} color="#4ecdc4" />
+        <ambientLight intensity={0.5} />
         
-        <SoulMesh intensity={intensity} isActive={isActive} />
+        <ParticleSoul intensity={intensity} isActive={isActive} />
         
         <OrbitControls 
           enableZoom={false} 
           enablePan={false}
-          autoRotate 
-          autoRotateSpeed={isActive ? 0.5 : 0.1} 
+          autoRotate={false} // 禁用自动旋转
           minPolarAngle={Math.PI / 4}
           maxPolarAngle={Math.PI - Math.PI / 4}
         />
       </Canvas>
 
-      {/* 状态指示器 (始终显示) */}
+      {/* 状态指示器 (保持不变) */}
       <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
-        {/* 左侧：Soul ID */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-md bg-black/20 border border-white/10 text-xs font-mono shadow-lg transition-colors duration-500">
           <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] transition-colors duration-500 ${
             isActive ? 'bg-cyan-400 text-cyan-400 animate-pulse' : 'bg-zinc-600 text-zinc-600'
@@ -129,7 +151,6 @@ export default function SoulRadar({ soulId }: SoulRadarProps) {
           </span>
         </div>
 
-        {/* 右侧：能量强度 */}
         <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg backdrop-blur-md bg-black/20 border border-white/10 text-xs font-medium shadow-lg">
           <span className="text-zinc-400 hidden sm:inline">ENERGY</span>
           <div className="flex items-center gap-2">

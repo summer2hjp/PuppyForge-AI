@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { jsonResponse, parseBody } from './_utils';
+import { jsonResponse, parseBody } from '../_utils';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.3.160:8000';
 
