@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # 防止 Python 缓冲输出，方便查看日志
 ENV PYTHONUNBUFFERED=1
 
+ENV PYTHONPATH=/app
 WORKDIR /app
 
 # 安装系统级依赖 (根据项目实际需求调整，例如 postgres-client, curl 等)
