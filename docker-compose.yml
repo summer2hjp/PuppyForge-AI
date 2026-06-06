@@ -14,7 +14,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin@123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-puppyforge123}
       POSTGRES_DB: ${POSTGRES_DB:-puppyforge_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -54,7 +54,7 @@ services:
       - puppyforge-net
 
   # ==================== 🔙 Backend (FastAPI) ====================
- backend:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.backend
@@ -63,7 +63,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin@123}@${POSTGR>
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin@123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-puppyforge_db}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
     ports:
       - "8000:8000"
@@ -73,7 +73,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - backend-net
+      - puppyforge-net
     volumes:
       - backend_logs:/app/logs
       - backend_uploads:/app/uploads

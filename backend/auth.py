@@ -78,7 +78,8 @@ async def get_current_user(
 
     # 异步执行数据库查询
     from sqlmodel import select
-    result = await db.execute(select(User).where(User.id == user_id))
+    # Convert user_id to int for BigInteger column
+    result = await db.execute(select(User).where(User.id == int(user_id)))
     user = result.scalars().first()
     
     if user is None:
@@ -124,7 +125,7 @@ async def login(form_data: UserCreate, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = create_access_token(data={"sub": user.id})
+    access_token = create_access_token(data={"sub": str(user.id)})
     
     return {
         "user": UserRead.model_validate(user),
@@ -279,7 +280,7 @@ async def google_callback(code: str, db: AsyncSession = Depends(get_db)):
                 await db.commit()
                 await db.refresh(user)
             
-            access_token = create_access_token(data={"sub": user.id})
+            access_token = create_access_token(data={"sub": str(user.id)})
             
             return {
                 "user": UserRead.model_validate(user),

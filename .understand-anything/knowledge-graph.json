@@ -1,4 +1,32 @@
 {
+  "version": "1.0.0",
+  "project": {
+    "name": "puppyforge-ai",
+    "description": "AI-native pet soul engine with neuromorphic state, WASM sandboxing, and trait drift",
+    "languages": [
+      "python",
+      "typescript",
+      "javascript",
+      "markdown",
+      "yaml",
+      "dockerfile",
+      "sql",
+      "css",
+      "html",
+      "json",
+      "toml"
+    ],
+    "frameworks": [
+      "FastAPI",
+      "Next.js",
+      "React",
+      "Zustand",
+      "Docker",
+      "GitHub Actions"
+    ],
+    "analyzedAt": "2026-06-06T12:09:56.099Z",
+    "gitCommitHash": "5625ca31d995559da6409c0ad952985869ea58e7"
+  },
   "nodes": [
     {
       "id": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
@@ -1176,42 +1204,42 @@
       "target": "class:frontend/ai-agents/agents/diagnosis-agent.ts:DiagnosisAgent",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/agents/growth-agent.ts",
       "target": "class:frontend/ai-agents/agents/growth-agent.ts:GrowthAgent",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/agents/prediction-agent.ts",
       "target": "class:frontend/ai-agents/agents/prediction-agent.ts:PredictionAgent",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/agents/rebel-agent.ts",
       "target": "class:frontend/ai-agents/agents/rebel-agent.ts:RebelAgent",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
       "target": "class:frontend/ai-agents/core/swarm-orchestrator.ts:PuppySwarm",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
       "target": "class:frontend/ai-agents/memory/puppy-long-term-memory.ts:PuppyMemory",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
@@ -1365,7 +1393,7 @@
       "target": "class:backend/forge/pipeline.py:ForgePipeline",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/forge/pipeline.py",
@@ -1386,14 +1414,14 @@
       "target": "class:backend/gateway/multimodal_ws.py:PuppySession",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/gateway/multimodal_ws.py",
       "target": "function:backend/gateway/multimodal_ws.py:symbiosis_gateway",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/gateway/multimodal_ws.py",
@@ -1421,7 +1449,7 @@
       "target": "function:backend/vision/__init__.py:analyze_pet_image",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/vision/__init__.py",
@@ -1442,14 +1470,14 @@
       "target": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/vision/soul_diagnosis.py",
       "target": "function:backend/vision/soul_diagnosis.py:diagnose",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/vision/soul_diagnosis.py",
@@ -1477,63 +1505,63 @@
       "target": "function:backend/tests/conftest.py:test_db",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/tests/conftest.py",
       "target": "function:backend/tests/conftest.py:client",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/tests/conftest.py",
       "target": "function:backend/tests/conftest.py:mock_external_services",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/tests/conftest.py",
       "target": "function:backend/tests/conftest.py:orchestrator",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/tests/test_ai_agent.py",
       "target": "class:backend/tests/test_ai_agent.py:TestAIAgent",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/tests/test_orchestrator.py",
       "target": "function:backend/tests/test_orchestrator.py:test_orchestrator_health_diagnosis",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
       "target": "class:frontend/ai-agents/swarm-orchestrator.ts:SwarmOrchestrator",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
       "target": "function:frontend/ai-agents/swarm-orchestrator.ts:run",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
       "target": "function:frontend/ai-agents/swarm-orchestrator.ts:_enhanceResult",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
@@ -1596,7 +1624,7 @@
       "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/components/HealthScoreCard.tsx",
@@ -1617,14 +1645,14 @@
       "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/components/PuppyProfile.tsx",
       "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfile",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/components/PuppyProfile.tsx",
@@ -1701,7 +1729,7 @@
       "target": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:backend/core/neuromorphic_engine.py",
@@ -1715,56 +1743,56 @@
       "target": "function:backend/core/neuromorphic_engine.py:process_interaction",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
       "target": "function:backend/core/neuromorphic_engine.py:_persona_mutator_worker",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
       "target": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
       "target": "function:backend/core/neuromorphic_engine.py:_compute_trait_drift",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/forge/pipeline.py:ForgePipeline",
       "target": "function:backend/forge/pipeline.py:run_forge",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/forge/pipeline.py:ForgePipeline",
       "target": "function:backend/forge/pipeline.py:_alchemy_prompt",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/forge/pipeline.py:ForgePipeline",
       "target": "function:backend/forge/pipeline.py:_adversarial_validation",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "class:backend/forge/pipeline.py:ForgePipeline",
       "target": "function:backend/forge/pipeline.py:_crystallize_asset",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "function:backend/core/neuromorphic_engine.py:process_interaction",
@@ -1834,14 +1862,14 @@
       "target": "function:frontend/app/providers.tsx:Providers",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/lib/websocket-client.ts",
       "target": "class:frontend/lib/websocket-client.ts:PersonaWebSocketClient",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "file:frontend/app/providers.tsx",
@@ -1876,21 +1904,21 @@
       "target": "service:backend/docker-compose.backend.yml:postgres",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:backend/docker-compose.backend.yml",
       "target": "service:backend/docker-compose.backend.yml:redis",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:backend/docker-compose.backend.yml",
       "target": "service:backend/docker-compose.backend.yml:backend",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:backend/docker-compose.backend.yml:backend",
@@ -1918,7 +1946,7 @@
       "target": "service:frontend/docker-compose.frontend.yml:frontend",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:frontend/docker-compose.frontend.yml:frontend",
@@ -1939,21 +1967,21 @@
       "target": "service:frontend/Dockerfile:deps",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:frontend/Dockerfile",
       "target": "service:frontend/Dockerfile:builder",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:frontend/Dockerfile",
       "target": "service:frontend/Dockerfile:runner",
       "type": "contains",
       "direction": "forward",
-      "weight": 1.0
+      "weight": 1
     },
     {
       "source": "service:frontend/Dockerfile:builder",
@@ -1976,5 +2004,7 @@
       "direction": "forward",
       "weight": 0.7
     }
-  ]
+  ],
+  "layers": [],
+  "tour": []
 }
