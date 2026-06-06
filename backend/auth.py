@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
+import logging
+import urllib.parse
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -12,6 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import settings
 from models.auth import User, UserRead, UserCreate, UserRole
 from database import get_db
+
+logger = logging.getLogger(__name__)
 
 # 初始化密码上下文和 OAuth2 Scheme
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -54,6 +61,13 @@ def verify_token(token: str) -> dict:
             detail="无效凭证",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def create_refresh_token(data: dict) -> str:
+    """创建刷新令牌"""
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
 
 # --- 依赖注入 ---
 
@@ -210,7 +224,7 @@ async def google_login():
     }
 
 @router.get("/github/login")
-async def github_login():
+async def github_login(request: Request):
     logger.info(f"[DEBUG Auth] 收到 GitHub 登录请求，来源 IP: {request.client.host if request.client else 'Unknown'}")
 
     if not settings.GITHUB_CLIENT_ID:
@@ -302,7 +316,7 @@ async def github_callback(code: str, state: str = None, db: AsyncSession = Depen
         logger.error("[DEBUG Auth] 错误：缺少授权码 Code")
         raise HTTPException(status_code=400, detail="Missing authorization code")
 
-    frontend_callback_url = settings.FRONTEND_URL or "http://192.168.3.106:3000"
+    frontend_callback_url = getattr(settings, 'FRONTEND_URL', None) or settings.ALLOWED_ORIGINS.split(",")[0].strip() or "http://localhost:3000"
     
     try:
         logger.info("[DEBUG Auth] 正在向 GitHub 请求 Access Token...")
@@ -374,6 +388,7 @@ async def github_callback(code: str, state: str = None, db: AsyncSession = Depen
 
         if not user:
             # 创建新用户
+            is_new_user = True
             logger.info(f"[DEBUG Auth] 用户不存在，创建新用户：{email}")
             user = User(
                 email=email,
@@ -390,6 +405,7 @@ async def github_callback(code: str, state: str = None, db: AsyncSession = Depen
             logger.info(f"[DEBUG Auth] 新用户创建成功，ID: {user.id}")
         else:
             # 更新头像等信息
+            is_new_user = False
             logger.info(f"[DEBUG Auth] 老用户登录，ID: {user.id}")
             user.avatar_url = gh_user.get("avatar_url")
             user.full_name = gh_user.get("name") or user.full_name

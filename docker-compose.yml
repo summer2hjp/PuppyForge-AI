@@ -124,6 +124,28 @@ services:
   #   networks:
   #     - puppyforge-net
 
+# ==================== 🔄 Cloudflare Tunnel (可选) ====================
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: puppyforge-tunnel
+    profiles:
+      - tunnel  # 仅通过 `docker compose --profile tunnel up -d` 启动
+    restart: always
+    network_mode: host
+    command: >
+      tunnel --no-autoupdate
+      --edge 198.41.192.47:7844
+      --edge 198.41.192.67:7844
+      --edge 198.41.192.107:7844
+      --edge 198.41.192.167:7844
+      --edge 198.41.192.207:7844
+      --edge 198.41.200.47:7844
+      --edge 198.41.200.67:7844
+      run --token ${CF_TUNNEL_TOKEN:?请设置 CF_TUNNEL_TOKEN}
+    labels:
+      - "app=puppyforge"
+      - "component=tunnel"
+
 # ==================== 📦 持久化卷 ====================
 volumes:
   postgres_data:
