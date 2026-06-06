@@ -1,0 +1,1 @@
+{"lastAnalyzedAt": "2026-06-07T12:00:00.000Z", "gitCommitHash": "5625ca31d995559da6409c0ad952985869ea58e7", "version": "1.0.0", "analyzedFiles": 225, "analyzedBatches": "8/22 (36%)", "batchWarning": "14 batches unprocessed due to API errors (Haiku 4.5 free tier exhausted, Opus 4.8 + Sonnet 4.6 API config issues). See intermediate/batches.json for batch definitions."}

@@ -1,0 +1,1980 @@
+{
+  "nodes": [
+    {
+      "id": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "type": "file",
+      "name": "diagnosis-agent.ts",
+      "filePath": "frontend/ai-agents/agents/diagnosis-agent.ts",
+      "summary": "Client-side DiagnosisAgent that performs soul diagnosis on puppy profiles, analyzing core behavioral issues, hidden risks, and emotion vectors. Currently returns mock data with a TODO for LLM integration.",
+      "tags": [
+        "agent",
+        "diagnosis",
+        "service",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "type": "file",
+      "name": "growth-agent.ts",
+      "filePath": "frontend/ai-agents/agents/growth-agent.ts",
+      "summary": "Client-side GrowthAgent that creates personalized growth plans for puppy personality development, including daily tasks and personality direction. Currently returns mock data with a TODO for LLM integration.",
+      "tags": [
+        "agent",
+        "growth-plan",
+        "service",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "type": "file",
+      "name": "prediction-agent.ts",
+      "filePath": "frontend/ai-agents/agents/prediction-agent.ts",
+      "summary": "Client-side PredictionAgent that forecasts future puppy behavioral trends over 7 and 30 day windows, including intervention timing and worst-case scenarios. Currently returns mock data with a TODO for LLM integration.",
+      "tags": [
+        "agent",
+        "prediction",
+        "service",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/agents/rebel-agent.ts",
+      "type": "file",
+      "name": "rebel-agent.ts",
+      "filePath": "frontend/ai-agents/agents/rebel-agent.ts",
+      "summary": "Client-side RebelAgent that generates rebellious personality responses for puppies, adding emotional depth through cheeky messages, challenge levels, and hidden emotions. Also provides random rebel action generation from a predefined action list.",
+      "tags": [
+        "agent",
+        "rebel-personality",
+        "service",
+        "swarm-member"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "type": "file",
+      "name": "swarm-orchestrator.ts",
+      "filePath": "frontend/ai-agents/core/swarm-orchestrator.ts",
+      "summary": "Core PuppySwarm orchestrator that coordinates the four-stage soul forging pipeline: diagnosis, prediction, growth planning, and optional rebel response, then persists results to PuppyMemory. Provides standalone diagnosis and trend analysis entry points.",
+      "tags": [
+        "orchestrator",
+        "swarm",
+        "pipeline",
+        "service",
+        "entry-point"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:frontend/ai-agents/diagnosis-prompt.txt",
+      "type": "document",
+      "name": "diagnosis-prompt.txt",
+      "filePath": "frontend/ai-agents/diagnosis-prompt.txt",
+      "summary": "Veterinary-focused diagnosis prompt template for analyzing puppy images (feces, skin, behavior), requesting JSON output with condition, probability, urgency, and disease lists covering common issues like Parvo, Distemper, and Giardia.",
+      "tags": [
+        "documentation",
+        "prompt-template",
+        "diagnosis",
+        "veterinary"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "filePath": "frontend/ai-agents/index.ts",
+      "summary": "Barrel file that re-exports all public API from the ai-agents package: the PuppySwarm orchestrator, four agent classes, PuppyMemory, all prompt constants, and types. Serves as the single entry point for consuming the client-side agent swarm.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "exports"
+      ],
+      "complexity": "simple",
+      "languageNotes": "TypeScript barrel module pattern with 12 named exports aggregating agents, memory, prompts, and types from subdirectories."
+    },
+    {
+      "id": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "type": "file",
+      "name": "puppy-long-term-memory.ts",
+      "filePath": "frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "summary": "PuppyMemory class that stores and manages puppy growth history as in-memory snapshots (Map-based), retaining the last 10 entries per puppy. Provides summary, trend analysis (anxiety trend and progress score), history retrieval, and memory clearing.",
+      "tags": [
+        "memory",
+        "data-model",
+        "service",
+        "state-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/ai-agents/prompts/diagnosis.prompt.ts",
+      "type": "file",
+      "name": "diagnosis.prompt.ts",
+      "filePath": "frontend/ai-agents/prompts/diagnosis.prompt.ts",
+      "summary": "Exports two diagnosis prompt template strings (DIAGNOSIS_PROMPT and SYSTEM_DIAGNOSIS_PROMPT) for the soul diagnosis agent, defining the structured JSON output format with core issues, hidden risks, emotion vectors, and trust scores.",
+      "tags": [
+        "prompt-template",
+        "diagnosis",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/prompts/growth.prompt.ts",
+      "type": "file",
+      "name": "growth.prompt.ts",
+      "filePath": "frontend/ai-agents/prompts/growth.prompt.ts",
+      "summary": "Exports two growth plan prompt template strings (GROWTH_PROMPT and SYSTEM_GROWTH_PROMPT) for the soul forging agent, defining the structured JSON output format with daily tasks, personality direction, special events, and long-term goals.",
+      "tags": [
+        "prompt-template",
+        "growth-plan",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:frontend/ai-agents/agents/diagnosis-agent.ts:DiagnosisAgent",
+      "type": "class",
+      "name": "DiagnosisAgent",
+      "filePath": "frontend/ai-agents/agents/diagnosis-agent.ts",
+      "lineRange": [
+        14,
+        32
+      ],
+      "summary": "Soul diagnosis agent that analyzes puppy behavioral profiles to identify core issues, hidden risks, and emotion vectors (happiness, anxiety, loyalty). Implements the PuppySwarmAgent interface.",
+      "tags": [
+        "agent",
+        "diagnosis",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:frontend/ai-agents/agents/growth-agent.ts:GrowthAgent",
+      "type": "class",
+      "name": "GrowthAgent",
+      "filePath": "frontend/ai-agents/agents/growth-agent.ts",
+      "lineRange": [
+        14,
+        27
+      ],
+      "summary": "Soul growth agent that designs personalized development plans including daily tasks, personality direction, and milestone events based on diagnosis and prediction inputs. Implements the PuppySwarmAgent interface.",
+      "tags": [
+        "agent",
+        "growth-plan",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:frontend/ai-agents/agents/prediction-agent.ts:PredictionAgent",
+      "type": "class",
+      "name": "PredictionAgent",
+      "filePath": "frontend/ai-agents/agents/prediction-agent.ts",
+      "lineRange": [
+        13,
+        28
+      ],
+      "summary": "Timeline prediction agent that forecasts puppy behavioral trends over 7 and 30 day windows, including intervention windows, worst-case scenarios, and probability scores. Implements the PuppySwarmAgent interface.",
+      "tags": [
+        "agent",
+        "prediction",
+        "swarm-member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:frontend/ai-agents/agents/rebel-agent.ts:RebelAgent",
+      "type": "class",
+      "name": "RebelAgent",
+      "filePath": "frontend/ai-agents/agents/rebel-agent.ts",
+      "lineRange": [
+        19,
+        68
+      ],
+      "summary": "Rebellious personality agent that generates cheeky rebel messages with challenge levels and hidden emotions, plus random rebellious actions. Adds emotional depth and realism to puppy interactions through an adversarial personality layer.",
+      "tags": [
+        "agent",
+        "rebel-personality",
+        "swarm-member"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:frontend/ai-agents/core/swarm-orchestrator.ts:PuppySwarm",
+      "type": "class",
+      "name": "PuppySwarm",
+      "filePath": "frontend/ai-agents/core/swarm-orchestrator.ts",
+      "lineRange": [
+        25,
+        116
+      ],
+      "summary": "Central swarm orchestrator that coordinates the four-stage soul forging pipeline (diagnosis, prediction, growth, optional rebel), persists results to memory, and provides standalone diagnosis and trend analysis entry points. The primary client-side agent coordination hub.",
+      "tags": [
+        "orchestrator",
+        "swarm",
+        "pipeline",
+        "entry-point"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Sequential orchestration pattern: diagnosis feeds prediction, which feeds growth, with optional rebel injection and memory persistence as final steps."
+    },
+    {
+      "id": "class:frontend/ai-agents/memory/puppy-long-term-memory.ts:PuppyMemory",
+      "type": "class",
+      "name": "PuppyMemory",
+      "filePath": "frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "lineRange": [
+        15,
+        95
+      ],
+      "summary": "In-memory long-term memory store for puppy growth history, retaining the last 10 snapshots per puppy. Provides trend analysis comparing anxiety levels over time, summary generation, history retrieval, and memory clearing.",
+      "tags": [
+        "memory",
+        "data-model",
+        "state-management"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses a Map<string, MemorySnapshot[]> for client-side storage with a sliding window of 10 entries, computing trend analysis by comparing first and last anxiety vectors."
+    },
+    {
+      "id": "file:backend/forge/pipeline.py",
+      "type": "file",
+      "name": "pipeline.py",
+      "filePath": "backend/forge/pipeline.py",
+      "summary": "4-stage asset generation pipeline (Prompt Alchemy, Parallel Forging, Adversarial VLM Validation, Crystallize to Qdrant) that produces personalized pet intervention content and stores it as vector memories.",
+      "tags": [
+        "service",
+        "forge-pipeline",
+        "asset-generation",
+        "ai-agent"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Simulates an alchemical process: prompt refinement via LLM, parallel content forging, adversarial quality validation, and permanent vector crystallization in Qdrant."
+    },
+    {
+      "id": "class:backend/forge/pipeline.py:ForgePipeline",
+      "type": "class",
+      "name": "ForgePipeline",
+      "filePath": "backend/forge/pipeline.py",
+      "lineRange": [
+        18,
+        156
+      ],
+      "summary": "4-stage alchemical asset generation pipeline that refines prompts, forges content, validates via adversarial LLM review, and crystallizes results as permanent Qdrant vector memories.",
+      "tags": [
+        "forge-pipeline",
+        "asset-generation",
+        "alchemical-process",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:backend/gateway/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "backend/gateway/__init__.py",
+      "summary": "Empty package initializer for the gateway module, marking the directory as a Python package.",
+      "tags": [
+        "barrel",
+        "entry-point"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:backend/gateway/multimodal_ws.py",
+      "type": "file",
+      "name": "multimodal_ws.py",
+      "filePath": "backend/gateway/multimodal_ws.py",
+      "summary": "WebSocket-based multimodal symbiosis gateway providing real-time vision perception, LLM-driven thinking, and streaming TTS audio output with barge-in interrupt support for pet interactions.",
+      "tags": [
+        "websocket",
+        "real-time",
+        "multimodal",
+        "gateway",
+        "streaming"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses asyncio.Queue with maxsize=2 for frame dropping to maintain low-latency real-time perception. Barge-in support via asyncio.Event for interrupting ongoing speech."
+    },
+    {
+      "id": "class:backend/gateway/multimodal_ws.py:PuppySession",
+      "type": "class",
+      "name": "PuppySession",
+      "filePath": "backend/gateway/multimodal_ws.py",
+      "lineRange": [
+        12,
+        58
+      ],
+      "summary": "WebSocket session handler that manages per-puppy vision perception (VLM frame analysis) and think-and-speak pipelines with barge-in interrupt support for natural conversation flow.",
+      "tags": [
+        "websocket",
+        "session",
+        "multimodal",
+        "streaming"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/gateway/multimodal_ws.py:symbiosis_gateway",
+      "type": "function",
+      "name": "symbiosis_gateway",
+      "filePath": "backend/gateway/multimodal_ws.py",
+      "lineRange": [
+        61,
+        85
+      ],
+      "summary": "FastAPI WebSocket endpoint accepting connections, creating PuppySession instances, and routing binary frames and text commands to the session's vision and interrupt handlers.",
+      "tags": [
+        "websocket",
+        "endpoint",
+        "gateway"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:backend/vision/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "backend/vision/__init__.py",
+      "summary": "Vision module entry point that re-exports the diagnosis service and router from soul_diagnosis, and provides an analyze_pet_image convenience function for converting raw image bytes to base64 and delegating to the diagnosis service.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "vision",
+        "diagnosis"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/vision/__init__.py:analyze_pet_image",
+      "type": "function",
+      "name": "analyze_pet_image",
+      "filePath": "backend/vision/__init__.py",
+      "lineRange": [
+        6,
+        51
+      ],
+      "summary": "Convenience function that converts raw image bytes to base64, delegates to SoulDiagnosisService.diagnose_image, and transforms the result into a simplified traits/confidence/health_score format.",
+      "tags": [
+        "utility",
+        "vision",
+        "diagnosis",
+        "image-processing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:backend/vision/soul_diagnosis.py",
+      "type": "file",
+      "name": "soul_diagnosis.py",
+      "filePath": "backend/vision/soul_diagnosis.py",
+      "summary": "Core visual diagnosis service that validates base64-encoded pet images, checks file type and size constraints, and performs LLM-based health analysis returning breed, health score, issues, and recommendations.",
+      "tags": [
+        "service",
+        "vision",
+        "diagnosis",
+        "validation",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
+      "type": "class",
+      "name": "SoulDiagnosisService",
+      "filePath": "backend/vision/soul_diagnosis.py",
+      "lineRange": [
+        13,
+        102
+      ],
+      "summary": "Singleton service performing multi-modal visual diagnosis on pet images: decodes base64, validates image format and size against config constraints, and generates structured health analysis with breed identification, scoring, and recommendations.",
+      "tags": [
+        "service",
+        "vision",
+        "diagnosis",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/vision/soul_diagnosis.py:diagnose",
+      "type": "function",
+      "name": "diagnose",
+      "filePath": "backend/vision/soul_diagnosis.py",
+      "lineRange": [
+        120,
+        137
+      ],
+      "summary": "FastAPI POST endpoint handler for the /vision/diagnose route that accepts a DiagnoseRequest payload and delegates to the SoulDiagnosisService singleton.",
+      "tags": [
+        "api-handler",
+        "endpoint",
+        "vision"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:backend/tests/conftest.py",
+      "type": "file",
+      "name": "conftest.py",
+      "filePath": "backend/tests/conftest.py",
+      "summary": "Shared pytest fixtures providing an in-memory SQLite async test database, a FastAPI TestClient with dependency overrides, autouse mocks for external services, and a mocked SwarmOrchestrator instance.",
+      "tags": [
+        "test",
+        "fixture",
+        "setup",
+        "mocking"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/tests/conftest.py:test_db",
+      "type": "function",
+      "name": "test_db",
+      "filePath": "backend/tests/conftest.py",
+      "lineRange": [
+        17,
+        33
+      ],
+      "summary": "Async pytest fixture that creates and tears down an in-memory SQLite database using SQLModel metadata, yielding an async session for each test function.",
+      "tags": [
+        "fixture",
+        "database",
+        "test-setup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:backend/tests/conftest.py:client",
+      "type": "function",
+      "name": "client",
+      "filePath": "backend/tests/conftest.py",
+      "lineRange": [
+        36,
+        43
+      ],
+      "summary": "Pytest fixture providing a FastAPI TestClient with the database dependency overridden to use the test database session.",
+      "tags": [
+        "fixture",
+        "test-client",
+        "dependency-injection"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:backend/tests/conftest.py:mock_external_services",
+      "type": "function",
+      "name": "mock_external_services",
+      "filePath": "backend/tests/conftest.py",
+      "lineRange": [
+        46,
+        49
+      ],
+      "summary": "Autouse pytest fixture that patches SwarmOrchestrator with an AsyncMock to prevent real external service calls during tests.",
+      "tags": [
+        "fixture",
+        "mocking",
+        "test-setup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:backend/tests/conftest.py:orchestrator",
+      "type": "function",
+      "name": "orchestrator",
+      "filePath": "backend/tests/conftest.py",
+      "lineRange": [
+        52,
+        63
+      ],
+      "summary": "Async pytest fixture providing a SwarmOrchestrator instance with run_full_diagnosis mocked to return predefined health analysis results.",
+      "tags": [
+        "fixture",
+        "mocking",
+        "orchestrator"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:backend/tests/test_ai_agent.py",
+      "type": "file",
+      "name": "test_ai_agent.py",
+      "filePath": "backend/tests/test_ai_agent.py",
+      "summary": "Integration and unit tests for the AI agent swarm covering full pipeline diagnosis, VisionAgent image analysis, DiagnosisAgent trait-based reporting, MemoryAgent embedding storage, and TraitDriftAgent drift prediction.",
+      "tags": [
+        "test",
+        "ai-agent",
+        "integration",
+        "unit"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:backend/tests/test_ai_agent.py:TestAIAgent",
+      "type": "class",
+      "name": "TestAIAgent",
+      "filePath": "backend/tests/test_ai_agent.py",
+      "lineRange": [
+        10,
+        83
+      ],
+      "summary": "Async test class with five test methods validating the complete AI agent pipeline: orchestrator full diagnosis, independent vision analysis, diagnosis with trait drift, memory embedding storage, and trait drift prediction.",
+      "tags": [
+        "test",
+        "ai-agent",
+        "integration"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:backend/tests/test_orchestrator.py",
+      "type": "file",
+      "name": "test_orchestrator.py",
+      "filePath": "backend/tests/test_orchestrator.py",
+      "summary": "Simple synchronous test verifying SwarmOrchestrator.run_diagnosis returns soul_traits and recommendations for a basic pet diagnosis input.",
+      "tags": [
+        "test",
+        "orchestrator",
+        "unit"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:backend/tests/test_orchestrator.py:test_orchestrator_health_diagnosis",
+      "type": "function",
+      "name": "test_orchestrator_health_diagnosis",
+      "filePath": "backend/tests/test_orchestrator.py",
+      "lineRange": [
+        3,
+        11
+      ],
+      "summary": "Tests that SwarmOrchestrator.run_diagnosis returns results containing soul_traits and a list of recommendations for a basic diagnosis input.",
+      "tags": [
+        "test",
+        "orchestrator",
+        "unit"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "type": "file",
+      "name": "swarm-orchestrator.ts",
+      "filePath": "frontend/ai-agents/swarm-orchestrator.ts",
+      "summary": "Orchestrates AI agent interactions with the backend API, handling event validation, API calls, and result enhancement for pet personality evolution.",
+      "tags": [
+        "api-handler",
+        "utility",
+        "middleware",
+        "entry-point"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/ai-agents/types.ts",
+      "type": "file",
+      "name": "types.ts",
+      "filePath": "frontend/ai-agents/types.ts",
+      "summary": "Defines core TypeScript interfaces and types used throughout the AI agent system for consistent data structures.",
+      "tags": [
+        "type-definition",
+        "utility",
+        "api-schema"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/ai-agents/prompts/prediction.prompt.ts",
+      "type": "file",
+      "name": "prediction.prompt.ts",
+      "filePath": "frontend/ai-agents/prompts/prediction.prompt.ts",
+      "summary": "Contains prompt templates for the prediction AI agent, defining how future behavior trends should be analyzed.",
+      "tags": [
+        "api-schema",
+        "configuration",
+        "prompt"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/app/profile/page.tsx",
+      "type": "file",
+      "name": "page.tsx",
+      "filePath": "frontend/app/profile/page.tsx",
+      "summary": "Main page component for the pet profile view, rendering the puppy profile and health score card components.",
+      "tags": [
+        "entry-point",
+        "component",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/components/HealthScoreCard.tsx",
+      "type": "file",
+      "name": "HealthScoreCard.tsx",
+      "filePath": "frontend/components/HealthScoreCard.tsx",
+      "summary": "React component displaying pet health scores and personality traits with real-time updates from the AI swarm.",
+      "tags": [
+        "component",
+        "ui",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/components/PuppyProfile.tsx",
+      "type": "file",
+      "name": "PuppyProfile.tsx",
+      "filePath": "frontend/components/PuppyProfile.tsx",
+      "summary": "React component displaying pet profile information including name, breed, age, memories, and personality traits.",
+      "tags": [
+        "component",
+        "ui",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:frontend/ai-agents/swarm-orchestrator.ts:SwarmOrchestrator",
+      "type": "class",
+      "name": "SwarmOrchestrator",
+      "filePath": "frontend/ai-agents/swarm-orchestrator.ts",
+      "lineRange": [
+        36,
+        81
+      ],
+      "summary": "Class responsible for orchestrating interactions with the backend AI swarm, managing API communication and result processing.",
+      "tags": [
+        "service",
+        "api-handler",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/ai-agents/swarm-orchestrator.ts:run",
+      "type": "function",
+      "name": "run",
+      "filePath": "frontend/ai-agents/swarm-orchestrator.ts",
+      "lineRange": [
+        39,
+        67
+      ],
+      "summary": "Main orchestration method that validates events, calls backend API, and processes results with enhancements.",
+      "tags": [
+        "api-handler",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/ai-agents/swarm-orchestrator.ts:_enhanceResult",
+      "type": "function",
+      "name": "_enhanceResult",
+      "filePath": "frontend/ai-agents/swarm-orchestrator.ts",
+      "lineRange": [
+        69,
+        80
+      ],
+      "summary": "Private helper method that enhances API results with additional processing like rounding scores and adding recommendations.",
+      "tags": [
+        "utility",
+        "data-processing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "function",
+      "name": "HealthScoreCard",
+      "filePath": "frontend/components/HealthScoreCard.tsx",
+      "lineRange": [
+        11,
+        146
+      ],
+      "summary": "React functional component that displays pet health score and personality traits with real-time updates.",
+      "tags": [
+        "component",
+        "ui",
+        "utility"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "function",
+      "name": "PuppyProfilePanel",
+      "filePath": "frontend/components/PuppyProfile.tsx",
+      "lineRange": [
+        11,
+        86
+      ],
+      "summary": "React functional component that renders pet profile information including name, breed, age, memories, and personality traits.",
+      "tags": [
+        "component",
+        "ui",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:frontend/components/PuppyProfile.tsx:PuppyProfile",
+      "type": "function",
+      "name": "PuppyProfile",
+      "filePath": "frontend/components/PuppyProfile.tsx",
+      "lineRange": [
+        95,
+        105
+      ],
+      "summary": "Test component for displaying pet information, primarily used for testing purposes.",
+      "tags": [
+        "component",
+        "test",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:backend/core/neuromorphic_engine.py",
+      "type": "file",
+      "name": "neuromorphic_engine.py",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "summary": "Core neuromorphic engine implementing event-sourced pet personality evolution. Processes interactions through Redis Streams, computes LLM-driven Trait Drift on 4 personality axes (trust, neuroticism, energy, attachment), and triggers ForgePipeline for personalized asset generation.",
+      "tags": [
+        "service",
+        "event-sourcing",
+        "trait-drift",
+        "neuromorphic-engine",
+        "ai-agent"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Uses Redis Streams for event sourcing, Qdrant for vector memory, and AsyncOpenAI for LLM-driven personality drift computation. Trait drift deltas are bounded to [-0.15, 0.15] and clamped to [0.0, 1.0]."
+    },
+    {
+      "id": "file:backend/forge/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "backend/forge/__init__.py",
+      "summary": "Package barrel file that re-exports ForgePipeline from the forge.pipeline module, providing the public API for the forge package.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "exports"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "type": "class",
+      "name": "NeuromorphicEngine",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "lineRange": [
+        39,
+        169
+      ],
+      "summary": "Core neuromorphic engine class that orchestrates pet personality evolution through event ingestion, dual-scale memory storage, LLM-computed Trait Drift, and Forge-driven personalized asset generation.",
+      "tags": [
+        "neuromorphic-engine",
+        "trait-drift",
+        "event-sourcing",
+        "service"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:backend/core/neuromorphic_engine.py:process_interaction",
+      "type": "function",
+      "name": "process_interaction",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "lineRange": [
+        53,
+        66
+      ],
+      "summary": "API entry point that writes interaction events to Redis Streams and spawns an async persona mutation worker for background personality evolution.",
+      "tags": [
+        "event-sourcing",
+        "api-handler",
+        "async"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/core/neuromorphic_engine.py:_persona_mutator_worker",
+      "type": "function",
+      "name": "_persona_mutator_worker",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "lineRange": [
+        68,
+        87
+      ],
+      "summary": "Background worker that generates embeddings, stores interaction memories in Qdrant, and triggers persona mutation with Forge integration.",
+      "tags": [
+        "worker",
+        "vector-memory",
+        "async"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
+      "type": "function",
+      "name": "_mutate_persona_with_forge",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "lineRange": [
+        96,
+        144
+      ],
+      "summary": "Core personality evolution method that retrieves recent memories from Qdrant, computes LLM-driven Trait Drift, generates Forge intervention assets, and applies quality-boosted drift deltas to update the persona in Redis.",
+      "tags": [
+        "trait-drift",
+        "forge-integration",
+        "personality-evolution",
+        "core-logic"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:backend/core/neuromorphic_engine.py:_compute_trait_drift",
+      "type": "function",
+      "name": "_compute_trait_drift",
+      "filePath": "backend/core/neuromorphic_engine.py",
+      "lineRange": [
+        146,
+        162
+      ],
+      "summary": "Uses LLM (gpt-4o-mini) with structured JSON output to compute personality trait deltas bounded to [-0.15, 0.15], returning a validated TraitDrift object.",
+      "tags": [
+        "trait-drift",
+        "llm-computation",
+        "structured-output"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/forge/pipeline.py:run_forge",
+      "type": "function",
+      "name": "run_forge",
+      "filePath": "backend/forge/pipeline.py",
+      "lineRange": [
+        29,
+        82
+      ],
+      "summary": "Main 4-stage forge orchestration method that chains alchemy, parallel forging, adversarial validation, and crystallization, tracking quality scores and duration at each stage.",
+      "tags": [
+        "orchestrator",
+        "forge-pipeline",
+        "4-stage-process"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/forge/pipeline.py:_alchemy_prompt",
+      "type": "function",
+      "name": "_alchemy_prompt",
+      "filePath": "backend/forge/pipeline.py",
+      "lineRange": [
+        84,
+        97
+      ],
+      "summary": "Stage 1 prompt refinement that uses LLM to optimize pet-related prompts into refined variants with expected impact assessment.",
+      "tags": [
+        "prompt-engineering",
+        "alchemy",
+        "llm-call"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:backend/forge/pipeline.py:_adversarial_validation",
+      "type": "function",
+      "name": "_adversarial_validation",
+      "filePath": "backend/forge/pipeline.py",
+      "lineRange": [
+        109,
+        122
+      ],
+      "summary": "Stage 3 adversarial quality review that uses LLM as a strict content safety and quality auditor, returning scores, issues, and approval status.",
+      "tags": [
+        "validation",
+        "adversarial-review",
+        "quality-control"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:backend/forge/pipeline.py:_crystallize_asset",
+      "type": "function",
+      "name": "_crystallize_asset",
+      "filePath": "backend/forge/pipeline.py",
+      "lineRange": [
+        124,
+        149
+      ],
+      "summary": "Stage 4 vector crystallization that generates embeddings, upserts assets into Qdrant as permanent memories, and returns crystallized asset metadata with quality scores.",
+      "tags": [
+        "vector-storage",
+        "crystallization",
+        "qdrant"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/app/providers.tsx",
+      "type": "file",
+      "name": "providers.tsx",
+      "filePath": "frontend/app/providers.tsx",
+      "summary": "React client component that bridges WebSocket persona-realtime-update events to Zustand store actions, syncing health scores, persona traits, and memory counts in real time.",
+      "tags": [
+        "component",
+        "middleware",
+        "websocket",
+        "real-time"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:frontend/app/providers.tsx:Providers",
+      "type": "function",
+      "name": "Providers",
+      "filePath": "frontend/app/providers.tsx",
+      "lineRange": [
+        7,
+        29
+      ],
+      "summary": "Root provider component that subscribes to custom DOM events from the WebSocket client and dispatches Zustand store updates for health, persona, and memory state changes.",
+      "tags": [
+        "component",
+        "event-handler",
+        "real-time"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:frontend/lib/websocket-client.ts",
+      "type": "file",
+      "name": "websocket-client.ts",
+      "filePath": "frontend/lib/websocket-client.ts",
+      "summary": "WebSocket client that connects to the backend persona stream endpoint, parses incoming JSON messages, dispatches custom DOM events for real-time state updates, and handles reconnection with ping/pong heartbeat.",
+      "tags": [
+        "websocket",
+        "real-time",
+        "networking",
+        "singleton"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses DOM CustomEvent as the inter-component communication bridge between WebSocket and React, avoiding direct React state coupling in the transport layer."
+    },
+    {
+      "id": "class:frontend/lib/websocket-client.ts:PersonaWebSocketClient",
+      "type": "class",
+      "name": "PersonaWebSocketClient",
+      "filePath": "frontend/lib/websocket-client.ts",
+      "lineRange": [
+        1,
+        62
+      ],
+      "summary": "WebSocket client class managing a persistent connection to the persona stream, with automatic reconnection (up to 6 retries), 25s ping heartbeat, and DOM event dispatch for parsed persona updates.",
+      "tags": [
+        "websocket",
+        "real-time",
+        "reconnection",
+        "networking"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:frontend/store/usePuppyStore.ts",
+      "type": "file",
+      "name": "usePuppyStore.ts",
+      "filePath": "frontend/store/usePuppyStore.ts",
+      "summary": "Central Zustand store defining puppy state (health score, persona axes, diagnosis results, rebel suggestions) with devtools and localStorage persistence, exposing 7 action methods for state mutations.",
+      "tags": [
+        "state-management",
+        "data-model",
+        "store",
+        "zustand"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses Zustand with devtools and persist middleware chains; partialize selectively persists only core state fields (puppyId, puppyName, persona, memoriesCount) to localStorage."
+    },
+    {
+      "id": "service:backend/docker-compose.backend.yml",
+      "type": "service",
+      "name": "docker-compose.backend.yml",
+      "filePath": "backend/docker-compose.backend.yml",
+      "summary": "Backend-focused Docker Compose configuration defining PostgreSQL, Redis, and the FastAPI backend service with health checks, volume persistence, and a dedicated bridge network.",
+      "tags": [
+        "orchestration",
+        "infrastructure",
+        "containerization",
+        "database"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses service_healthy condition in depends_on to enforce startup order; environment variables default to safe values via ${VAR:-default} syntax."
+    },
+    {
+      "id": "service:backend/docker-compose.backend.yml:postgres",
+      "type": "service",
+      "name": "postgres",
+      "filePath": "backend/docker-compose.backend.yml",
+      "summary": "PostgreSQL 16 Alpine container providing the primary relational database with 512MB shared buffers, 200 max connections, and pg_isready health checks.",
+      "tags": [
+        "infrastructure",
+        "database",
+        "containerization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:backend/docker-compose.backend.yml:redis",
+      "type": "service",
+      "name": "redis",
+      "filePath": "backend/docker-compose.backend.yml",
+      "summary": "Redis 7 Alpine container providing event streaming, caching, and compute-quota storage with AOF persistence and redis-cli ping health checks.",
+      "tags": [
+        "infrastructure",
+        "containerization",
+        "caching"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:backend/docker-compose.backend.yml:backend",
+      "type": "service",
+      "name": "backend",
+      "filePath": "backend/docker-compose.backend.yml",
+      "summary": "FastAPI backend service built from the local Dockerfile, connecting to PostgreSQL and Redis with service_healthy dependency conditions, exposing port 8000.",
+      "tags": [
+        "infrastructure",
+        "containerization",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:backend/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "backend/Dockerfile",
+      "summary": "Single-stage Docker build for the PuppyForge FastAPI backend using python:3.11-slim-bookworm, installing system and Python dependencies, running as a non-root appuser, with curl-based health checks on port 8000.",
+      "tags": [
+        "containerization",
+        "infrastructure",
+        "deployment",
+        "security"
+      ],
+      "complexity": "simple",
+      "languageNotes": "Non-root user (appuser uid 1001) for security hardening; HEALTHCHECK uses curl against /health endpoint; commented-out gunicorn+uvicorn workers config for production scaling."
+    },
+    {
+      "id": "service:frontend/docker-compose.frontend.yml",
+      "type": "service",
+      "name": "docker-compose.frontend.yml",
+      "filePath": "frontend/docker-compose.frontend.yml",
+      "summary": "Docker Compose configuration for the frontend Next.js service in development mode, with build args for NEXT_PUBLIC_* env vars, volume mounts for hot reload, and a custom startup command that auto-installs dependencies.",
+      "tags": [
+        "orchestration",
+        "infrastructure",
+        "containerization",
+        "frontend"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Uses WATCHPACK_POLLING=true for Docker volume-based hot reload on Windows/Mac. Build args inject NEXT_PUBLIC_* vars which must be set at build time for Next.js client-side bundling."
+    },
+    {
+      "id": "service:frontend/docker-compose.frontend.yml:frontend",
+      "type": "service",
+      "name": "frontend",
+      "filePath": "frontend/docker-compose.frontend.yml",
+      "summary": "Compose service definition for the PuppyForge frontend container, building from a Dockerfile with dev-mode volume mounts and auto-dependency installation on startup.",
+      "tags": [
+        "orchestration",
+        "infrastructure",
+        "frontend"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "service:frontend/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "frontend/Dockerfile",
+      "summary": "Three-stage Docker build producing a minimal Node.js production image for the Next.js frontend: deps stage installs production dependencies, builder stage builds the app with injected NEXT_PUBLIC_* env vars, runner stage runs the standalone output as a non-root user with health checks.",
+      "tags": [
+        "containerization",
+        "infrastructure",
+        "deployment",
+        "frontend"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Multi-stage build pattern: deps (npm ci --only=production), builder (npm run build with NEXT_PUBLIC_* args), runner (standalone output, non-root nextjs user, wget healthcheck). Requires next.config.js output:'standalone'."
+    },
+    {
+      "id": "service:frontend/Dockerfile:deps",
+      "type": "service",
+      "name": "deps",
+      "filePath": "frontend/Dockerfile",
+      "lineRange": [
+        8,
+        15
+      ],
+      "summary": "First build stage that installs production Node.js dependencies from package-lock.json using npm ci and cleans the cache.",
+      "tags": [
+        "containerization",
+        "build-system"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:frontend/Dockerfile:builder",
+      "type": "service",
+      "name": "builder",
+      "filePath": "frontend/Dockerfile",
+      "lineRange": [
+        16,
+        35
+      ],
+      "summary": "Second build stage that copies source and dependencies, injects NEXT_PUBLIC_* build-time environment variables, and runs npm run build to produce the Next.js standalone output.",
+      "tags": [
+        "containerization",
+        "build-system",
+        "frontend"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:frontend/Dockerfile:runner",
+      "type": "service",
+      "name": "runner",
+      "filePath": "frontend/Dockerfile",
+      "lineRange": [
+        36,
+        60
+      ],
+      "summary": "Final production stage that copies standalone build artifacts, runs as non-root nextjs user, exposes port 3000, and includes a wget-based health check.",
+      "tags": [
+        "containerization",
+        "deployment",
+        "frontend"
+      ],
+      "complexity": "moderate"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "target": "class:frontend/ai-agents/agents/diagnosis-agent.ts:DiagnosisAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "target": "class:frontend/ai-agents/agents/growth-agent.ts:GrowthAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "target": "class:frontend/ai-agents/agents/prediction-agent.ts:PredictionAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/rebel-agent.ts",
+      "target": "class:frontend/ai-agents/agents/rebel-agent.ts:RebelAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "class:frontend/ai-agents/core/swarm-orchestrator.ts:PuppySwarm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "target": "class:frontend/ai-agents/memory/puppy-long-term-memory.ts:PuppyMemory",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "target": "class:frontend/ai-agents/agents/diagnosis-agent.ts:DiagnosisAgent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "target": "class:frontend/ai-agents/agents/growth-agent.ts:GrowthAgent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "target": "class:frontend/ai-agents/agents/prediction-agent.ts:PredictionAgent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/rebel-agent.ts",
+      "target": "class:frontend/ai-agents/agents/rebel-agent.ts:RebelAgent",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "class:frontend/ai-agents/core/swarm-orchestrator.ts:PuppySwarm",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "target": "class:frontend/ai-agents/memory/puppy-long-term-memory.ts:PuppyMemory",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "target": "file:frontend/ai-agents/prompts/diagnosis.prompt.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "target": "file:frontend/ai-agents/prompts/growth.prompt.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "target": "file:frontend/ai-agents/prompts/prediction.prompt.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/agents/rebel-agent.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/agents/diagnosis-agent.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/agents/growth-agent.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/agents/prediction-agent.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/agents/rebel-agent.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/core/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/memory/puppy-long-term-memory.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:frontend/ai-agents/diagnosis-prompt.txt",
+      "target": "file:frontend/ai-agents/prompts/diagnosis.prompt.ts",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:backend/forge/pipeline.py",
+      "target": "class:backend/forge/pipeline.py:ForgePipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/forge/pipeline.py",
+      "target": "class:backend/forge/pipeline.py:ForgePipeline",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/gateway/__init__.py",
+      "target": "file:backend/gateway/multimodal_ws.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:backend/gateway/multimodal_ws.py",
+      "target": "class:backend/gateway/multimodal_ws.py:PuppySession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/gateway/multimodal_ws.py",
+      "target": "function:backend/gateway/multimodal_ws.py:symbiosis_gateway",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/gateway/multimodal_ws.py",
+      "target": "class:backend/gateway/multimodal_ws.py:PuppySession",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/gateway/multimodal_ws.py",
+      "target": "function:backend/gateway/multimodal_ws.py:symbiosis_gateway",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/vision/__init__.py",
+      "target": "file:backend/vision/soul_diagnosis.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:backend/vision/__init__.py",
+      "target": "function:backend/vision/__init__.py:analyze_pet_image",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/vision/__init__.py",
+      "target": "function:backend/vision/__init__.py:analyze_pet_image",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/vision/__init__.py:analyze_pet_image",
+      "target": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/vision/soul_diagnosis.py",
+      "target": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/vision/soul_diagnosis.py",
+      "target": "function:backend/vision/soul_diagnosis.py:diagnose",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/vision/soul_diagnosis.py",
+      "target": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/vision/soul_diagnosis.py",
+      "target": "function:backend/vision/soul_diagnosis.py:diagnose",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/vision/soul_diagnosis.py:diagnose",
+      "target": "class:backend/vision/soul_diagnosis.py:SoulDiagnosisService",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:backend/tests/conftest.py",
+      "target": "function:backend/tests/conftest.py:test_db",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/tests/conftest.py",
+      "target": "function:backend/tests/conftest.py:client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/tests/conftest.py",
+      "target": "function:backend/tests/conftest.py:mock_external_services",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/tests/conftest.py",
+      "target": "function:backend/tests/conftest.py:orchestrator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/tests/test_ai_agent.py",
+      "target": "class:backend/tests/test_ai_agent.py:TestAIAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/tests/test_orchestrator.py",
+      "target": "function:backend/tests/test_orchestrator.py:test_orchestrator_health_diagnosis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "class:frontend/ai-agents/swarm-orchestrator.ts:SwarmOrchestrator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "function:frontend/ai-agents/swarm-orchestrator.ts:run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "function:frontend/ai-agents/swarm-orchestrator.ts:_enhanceResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/types.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "file:frontend/ai-agents/prompts/prediction.prompt.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "function:frontend/ai-agents/swarm-orchestrator.ts:run",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "target": "class:frontend/ai-agents/swarm-orchestrator.ts:SwarmOrchestrator",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/ai-agents/types.ts",
+      "target": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/ai-agents/prompts/prediction.prompt.ts",
+      "target": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/app/profile/page.tsx",
+      "target": "file:frontend/components/PuppyProfile.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/app/profile/page.tsx",
+      "target": "file:frontend/components/HealthScoreCard.tsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/components/HealthScoreCard.tsx",
+      "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/components/HealthScoreCard.tsx",
+      "target": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/components/HealthScoreCard.tsx",
+      "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "file:frontend/ai-agents/swarm-orchestrator.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/components/HealthScoreCard.tsx",
+      "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/app/profile/page.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/app/profile/page.tsx",
+      "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/components/HealthScoreCard.tsx",
+      "target": "function:frontend/components/HealthScoreCard.tsx:HealthScoreCard",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:frontend/components/PuppyProfile.tsx",
+      "target": "function:frontend/components/PuppyProfile.tsx:PuppyProfilePanel",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:backend/core/neuromorphic_engine.py",
+      "target": "file:backend/forge/pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:backend/forge/__init__.py",
+      "target": "file:backend/forge/pipeline.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:backend/core/neuromorphic_engine.py",
+      "target": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:backend/core/neuromorphic_engine.py",
+      "target": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "target": "function:backend/core/neuromorphic_engine.py:process_interaction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "target": "function:backend/core/neuromorphic_engine.py:_persona_mutator_worker",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "target": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/core/neuromorphic_engine.py:NeuromorphicEngine",
+      "target": "function:backend/core/neuromorphic_engine.py:_compute_trait_drift",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/forge/pipeline.py:ForgePipeline",
+      "target": "function:backend/forge/pipeline.py:run_forge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/forge/pipeline.py:ForgePipeline",
+      "target": "function:backend/forge/pipeline.py:_alchemy_prompt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/forge/pipeline.py:ForgePipeline",
+      "target": "function:backend/forge/pipeline.py:_adversarial_validation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "class:backend/forge/pipeline.py:ForgePipeline",
+      "target": "function:backend/forge/pipeline.py:_crystallize_asset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "function:backend/core/neuromorphic_engine.py:process_interaction",
+      "target": "function:backend/core/neuromorphic_engine.py:_persona_mutator_worker",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/core/neuromorphic_engine.py:_persona_mutator_worker",
+      "target": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
+      "target": "function:backend/core/neuromorphic_engine.py:_compute_trait_drift",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/core/neuromorphic_engine.py:_mutate_persona_with_forge",
+      "target": "function:backend/forge/pipeline.py:run_forge",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/forge/pipeline.py:run_forge",
+      "target": "function:backend/forge/pipeline.py:_alchemy_prompt",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/forge/pipeline.py:run_forge",
+      "target": "function:backend/forge/pipeline.py:_adversarial_validation",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:backend/forge/pipeline.py:run_forge",
+      "target": "function:backend/forge/pipeline.py:_crystallize_asset",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "file:frontend/lib/websocket-client.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "file:frontend/store/usePuppyStore.ts",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "function:frontend/app/providers.tsx:Providers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/lib/websocket-client.ts",
+      "target": "class:frontend/lib/websocket-client.ts:PersonaWebSocketClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "function:frontend/app/providers.tsx:Providers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/lib/websocket-client.ts",
+      "target": "class:frontend/lib/websocket-client.ts:PersonaWebSocketClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "file:frontend/lib/websocket-client.ts",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:frontend/app/providers.tsx",
+      "target": "file:frontend/store/usePuppyStore.ts",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml",
+      "target": "service:backend/docker-compose.backend.yml:postgres",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml",
+      "target": "service:backend/docker-compose.backend.yml:redis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml",
+      "target": "service:backend/docker-compose.backend.yml:backend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml:backend",
+      "target": "service:backend/docker-compose.backend.yml:postgres",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml:backend",
+      "target": "service:backend/docker-compose.backend.yml:redis",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:backend/docker-compose.backend.yml:backend",
+      "target": "service:backend/Dockerfile",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:frontend/docker-compose.frontend.yml",
+      "target": "service:frontend/docker-compose.frontend.yml:frontend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:frontend/docker-compose.frontend.yml:frontend",
+      "target": "service:frontend/Dockerfile",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:frontend/docker-compose.frontend.yml",
+      "target": "service:frontend/Dockerfile",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/Dockerfile:deps",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/Dockerfile:builder",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/Dockerfile:runner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "service:frontend/Dockerfile:builder",
+      "target": "service:frontend/Dockerfile:deps",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:frontend/Dockerfile:runner",
+      "target": "service:frontend/Dockerfile:builder",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "service:frontend/docker-compose.frontend.yml",
+      "type": "deploys",
+      "direction": "forward",
+      "weight": 0.7
+    }
+  ]
+}
