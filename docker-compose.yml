@@ -14,7 +14,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-puppyforge123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
       POSTGRES_DB: ${POSTGRES_DB:-puppyforge_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -36,7 +36,7 @@ services:
     container_name: puppyforge-redis
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD:-admin@123}
+      --requirepass ${REDIS_PASSWORD:-admin123}
       --maxmemory-policy allkeys-lru
       --appendonly yes
     env_file: .env
@@ -45,7 +45,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-admin@123}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-admin123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -63,7 +63,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin@123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-puppyforge_db}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-puppyforge_db}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
     ports:
       - "8000:8000"
@@ -96,6 +96,9 @@ services:
     container_name: puppyforge-frontend
     working_dir: /app
     env_file: .env
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       # 🔒 服务端变量（不暴露给浏览器）
       - NODE_ENV=${ENVIRONMENT:-production}

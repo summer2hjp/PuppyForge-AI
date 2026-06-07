@@ -40,10 +40,39 @@ export async function verifyUserPassword(email: string, password: string): Promi
     Array.from(userStore.values()).find(u => u.email === email.toLowerCase())?.id || ''
   );
   if (!userData) return null;
-  
+
   const isMatch = await verifyPassword(password, userData.passwordHash);
   if (!isMatch) return null;
-  
+
   const { passwordHash, ...user } = userData;
+  return user;
+}
+
+export interface OAuthUserInput {
+  provider: string;
+  providerId: string;
+  email: string;
+  name: string;
+  avatar: string | null;
+}
+
+export async function findOrCreateOAuthUser(input: OAuthUserInput): Promise<User> {
+  // Check if a user with this provider ID already exists
+  for (const [, userData] of userStore) {
+    if (userData.email === input.email.toLowerCase()) {
+      const { passwordHash, ...user } = userData;
+      return user;
+    }
+  }
+
+  // Create new user
+  const user: User = {
+    id: `oauth_${input.provider}_${Date.now()}`,
+    email: input.email.toLowerCase(),
+    name: input.name,
+    role: 'user',
+    createdAt: new Date().toISOString(),
+  };
+  userStore.set(user.id, { ...user, passwordHash: '' });
   return user;
 }

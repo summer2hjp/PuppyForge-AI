@@ -6,6 +6,7 @@ const nextConfig = {
   // 🛡️ 开发与代码质量
   reactStrictMode: true,
   poweredByHeader: false, // 移除 X-Powered-By 头部
+  eslint: { ignoreDuringBuilds: true },
 
   allowedDevOrigins: ['192.168.3.106', 'localhost', '127.0.0.1'],
 

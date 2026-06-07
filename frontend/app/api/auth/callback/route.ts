@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findOrCreateOAuthUser } from '@/lib/db';
 import { signToken, signRefreshToken } from '@/lib/auth';
+import type { AuthPayload } from '@/lib/auth';
 
 // 注意：真实的 OAuth 流程通常需要后端先拿着 code 去 Provider (Google/GitHub) 换取用户信息。
 // 这里模拟已经获取到了用户信息的过程。在实际项目中，你需要在此处调用 Provider 的 API。
@@ -49,9 +50,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 生成 Token
+    const payload: AuthPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
     const [accessToken, refreshToken] = await Promise.all([
-      signToken(user),
-      signRefreshToken(user)
+      signToken(payload),
+      signRefreshToken(payload)
     ]);
 
     // 构建回调 URL，将 token 放在 hash 中 (比 query params 更安全，不会被服务器日志记录)

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthModal from '@/components/AuthModal';
@@ -29,6 +29,21 @@ interface Message {
 }
 
 export default function PuppyForgeDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-white">
+        <div className="text-cyan-400 animate-pulse flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          <span>正在初始化灵魂核心...</span>
+        </div>
+      </div>
+    }>
+      <PuppyForgeDashboardContent />
+    </Suspense>
+  );
+}
+
+function PuppyForgeDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, logout, setUser, login } = useAuth();

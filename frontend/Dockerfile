@@ -9,7 +9,8 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --only=production && \
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci && \
     npm cache clean --force
 
 # ==================== 阶段 2: 构建应用 ====================

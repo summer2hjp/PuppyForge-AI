@@ -31,13 +31,14 @@ interface SignedPayload extends AuthPayload {
 const TOKEN_SECRET = process.env.JWT_SECRET;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-if (!TOKEN_SECRET && NODE_ENV === 'production') {
-  throw new Error('JWT_SECRET environment variable is required in production');
-}
-
 // 开发环境 fallback，生产环境严禁使用
 const FALLBACK_SECRET = 'dev-fallback-secret-change-me-in-production';
-const SECRET = TOKEN_SECRET || FALLBACK_SECRET;
+function getSecret(): string {
+  if (!TOKEN_SECRET && NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  return TOKEN_SECRET || FALLBACK_SECRET;
+}
 
 // 令牌有效期配置
 const ACCESS_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 小时
@@ -222,7 +223,7 @@ function decodeAndVerify(token: string): SignedPayload | null {
  * 创建 HMAC-SHA256 签名
  */
 function createSignature(data: string): string {
-  return createHmac('sha256', SECRET)
+  return createHmac('sha256', getSecret())
     .update(data, 'utf8')
     .digest('hex');
 }
