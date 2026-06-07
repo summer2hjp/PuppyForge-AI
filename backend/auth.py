@@ -212,16 +212,27 @@ async def refresh_token(refresh_data: dict, db: AsyncSession = Depends(get_db)):
 # --- OAuth 第三方登录 ---
 
 @router.get("/google/login")
-async def google_login():
+async def google_login(request: Request):
     """Google OAuth 登录入口"""
-    return {
-        "url": (
-            f"https://accounts.google.com/o/oauth2/auth?"
-            f"client_id={settings.GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={settings.GOOGLE_REDIRECT_URI}"
-            f"&response_type=code&scope=email profile"
-        )
+    logger.info(f"[DEBUG Auth] 收到 Google 登录请求，来源 IP: {request.client.host if request.client else 'Unknown'}")
+
+    if not settings.GOOGLE_CLIENT_ID:
+        logger.error("[DEBUG Auth] 错误：GOOGLE_CLIENT_ID 未配置")
+        raise HTTPException(status_code=500, detail="服务器配置错误：缺少 Google Client ID")
+
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "email profile",
+        "state": "puppyforge_state",
     }
+
+    query_string = urllib.parse.urlencode(params)
+    google_auth_url = f"https://accounts.google.com/o/oauth2/auth?{query_string}"
+
+    logger.info(f"[DEBUG Auth] 重定向至 Google: {google_auth_url}")
+    return RedirectResponse(url=google_auth_url)
 
 @router.get("/github/login")
 async def github_login(request: Request):
