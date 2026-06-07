@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { jsonResponse } from '../_utils';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.3.160:8000';
+const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || 'http://backend:8000';
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');

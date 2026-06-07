@@ -66,7 +66,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-puppyforge_db}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
