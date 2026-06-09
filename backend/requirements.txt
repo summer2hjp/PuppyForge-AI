@@ -34,7 +34,7 @@ numpy>=1.26.0
 pytest
 pytest-cov
 pytest-asyncio
-bcrypt==4.0.1
+bcrypt==5.0.0
 
 # 🩺 Health & Monitoring (optional but recommended)
 prometheus-fastapi-instrumentator==7.0.0
