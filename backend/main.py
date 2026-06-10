@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from auth import router as auth_router, verify_token
+from auth import router as auth_router, verify_token_or_api_key
 from vision import router as vision_router
 from interactions import router as interact_router
 from websocket import router as ws_router
@@ -108,10 +108,14 @@ setup_global_exception_handlers(app)
 # 安全令牌验证依赖
 security = HTTPBearer()
 
-async def verify_api_key(credentials: HTTPBearer = Depends(security)) -> str:
-    """异步 API 密钥验证依赖"""
+async def verify_jwt_token(
+    credentials: HTTPBearer = Depends(security),
+    db: AsyncSession = Depends(get_db),
+) -> str:
+    """验证 JWT Token 或 API Key（支持 Bearer 头）"""
     token = credentials.credentials
-    if not verify_token(token):
+    payload = await verify_token_or_api_key(token, db)
+    if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -160,21 +164,21 @@ app.include_router(
     vision_router,
     prefix="/api/v1/vision",
     tags=["Vision Diagnosis"],
-    dependencies=[Depends(verify_api_key)]
+    dependencies=[Depends(verify_jwt_token)]
 )
 
 app.include_router(
     interact_router,
     prefix="/api/v1/interact",
     tags=["Interactions"],
-    dependencies=[Depends(verify_api_key)]
+    dependencies=[Depends(verify_jwt_token)]
 )
 
 app.include_router(
     soul_router,
     prefix="/api/v1/soul",
     tags=["Soul Management"],
-    dependencies=[Depends(verify_api_key)]
+    dependencies=[Depends(verify_jwt_token)]
 )
 
 app.include_router(
@@ -182,7 +186,7 @@ app.include_router(
     prefix="/api/v1/ws",
     tags=["Websocket"],
     # WebSocket 通常有自己的认证机制，这里可选
-    # dependencies=[Depends(verify_api_key)] 
+    # dependencies=[Depends(verify_jwt_token)]
 )
 
 @app.get("/")

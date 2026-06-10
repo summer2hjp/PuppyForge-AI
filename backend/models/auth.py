@@ -78,3 +78,53 @@ class User(UserBase, table=True):
     souls: List["PuppySoul"] = Relationship(back_populates="user", cascade_delete=True)
     interactions: List["Interaction"] = Relationship(back_populates="user", cascade_delete=True)
     diagnoses: List["Diagnosis"] = Relationship(back_populates="user", cascade_delete=True)
+    api_keys: List["ApiKey"] = Relationship(back_populates="user", cascade_delete=True)
+
+
+class ApiKeyBase(SQLModel):
+    """API Key 基础模型"""
+    name: str = Field(max_length=100, description="API Key 名称/标识")
+    is_active: bool = Field(default=True, description="是否激活")
+
+
+class ApiKeyCreate(SQLModel):
+    """创建 API Key 请求模型"""
+    name: str = Field(max_length=100, description="API Key 名称")
+    expires_in_days: Optional[int] = Field(None, description="过期天数（可选）")
+
+
+class ApiKeyRead(ApiKeyBase):
+    """API Key 响应模型（不包含原始 key）"""
+    id: int
+    key_prefix: str = Field(max_length=11, description="Key 前缀（pf_ + 前8位）")
+    user_id: int
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+
+
+class ApiKeyCreateResponse(SQLModel):
+    """创建 API Key 响应（包含一次性原始 key）"""
+    id: int
+    name: str
+    key_prefix: str
+    api_key: str = Field(description="完整 API Key（仅创建时返回一次）")
+    user_id: int
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+
+
+class ApiKey(ApiKeyBase, table=True):
+    """API Key 数据库模型"""
+    __tablename__ = "api_keys"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key_prefix: str = Field(max_length=11, sa_column=Column(String(11), index=True), description="Key 前缀（用于快速查找）")
+    key_hash: str = Field(max_length=128, sa_column=Column(String(128)), description="Key 的 SHA-256 哈希")
+    user_id: int = Field(foreign_key="users.id", sa_type=BigInteger, index=True, description="所属用户 ID")
+    created_at: datetime = Field(default_factory=get_utc_now, sa_column=Column(DateTime))
+    expires_at: Optional[datetime] = Field(None, sa_column=Column(DateTime, nullable=True), description="过期时间")
+    last_used_at: Optional[datetime] = Field(None, sa_column=Column(DateTime, nullable=True), description="最后使用时间")
+
+    # --- 关系 ---
+    user: Optional["User"] = Relationship(back_populates="api_keys")
