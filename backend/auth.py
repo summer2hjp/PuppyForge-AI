@@ -1,6 +1,5 @@
 import json
 import hashlib
-import hmac
 import logging
 import secrets
 import urllib.parse
@@ -9,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Annotated
 import httpx
@@ -24,8 +22,7 @@ from database import get_db
 
 logger = logging.getLogger(__name__)
 
-# 初始化密码上下文和 OAuth2 Scheme
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# OAuth2 Scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 #router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -141,13 +138,7 @@ async def generate_api_key(
     if expires_in_days:
         expires_at = get_utc_now() + timedelta(days=expires_in_days)
 
-    # 获取下一个 ID
-    from sqlmodel import func
-    result = await db.execute(select(func.max(ApiKey.id)))
-    max_id = result.scalar() or 0
-
     api_key = ApiKey(
-        id=max_id + 1,
         key_prefix=key_prefix,
         key_hash=key_hash,
         name=name,
@@ -178,26 +169,21 @@ async def resolve_api_key(db: AsyncSession, raw_key: str) -> Optional[ApiKey]:
     key_hash = _hash_api_key(raw_key)
     key_prefix = raw_key[: len(API_KEY_PREFIX) + 8]
 
+    now = get_utc_now()
     result = await db.execute(
         select(ApiKey).where(
             ApiKey.key_prefix == key_prefix,
             ApiKey.key_hash == key_hash,
             ApiKey.is_active == True,
+            (ApiKey.expires_at.is_(None) | (ApiKey.expires_at > now)),
         )
     )
     api_key = result.scalars().first()
     if api_key is None:
         return None
 
-    # 检查是否过期
-    if api_key.expires_at and api_key.expires_at < get_utc_now():
-        api_key.is_active = False
-        db.add(api_key)
-        await db.commit()
-        return None
-
     # 更新最后使用时间
-    api_key.last_used_at = get_utc_now()
+    api_key.last_used_at = now
     db.add(api_key)
     await db.commit()
 

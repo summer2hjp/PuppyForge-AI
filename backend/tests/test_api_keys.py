@@ -161,10 +161,10 @@ class TestGenerateAndResolveApiKey:
         resolved = await resolve_api_key(test_db, result.api_key)
         assert resolved is None
 
-        # 确认数据库标记为不活跃
+        # 确认 key 保持活跃但被查询过滤（未触发写入操作）
         record = await test_db.execute(select(ApiKey).where(ApiKey.id == result.id))
         db_key = record.scalars().first()
-        assert db_key.is_active is False
+        assert db_key.is_active is True
 
     @pytest.mark.asyncio
     async def test_resolve_key_updates_last_used(self, client, test_db):

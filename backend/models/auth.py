@@ -118,7 +118,7 @@ class ApiKey(ApiKeyBase, table=True):
     """API Key 数据库模型"""
     __tablename__ = "api_keys"
 
-    id: int = Field(primary_key=True, sa_type=BigInteger)
+    id: Optional[int] = Field(default=None, primary_key=True)
     key_prefix: str = Field(max_length=11, sa_column=Column(String(11), index=True), description="Key 前缀（用于快速查找）")
     key_hash: str = Field(max_length=128, sa_column=Column(String(128)), description="Key 的 SHA-256 哈希")
     user_id: int = Field(foreign_key="users.id", sa_type=BigInteger, index=True, description="所属用户 ID")

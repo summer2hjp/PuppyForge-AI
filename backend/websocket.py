@@ -1,11 +1,9 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List
 import json
 
 from database import get_db
-from auth import get_current_user
-from models.auth import User
 
 router = APIRouter(prefix="/ws", tags=["Websocket"])
 
