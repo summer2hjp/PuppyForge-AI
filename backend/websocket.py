@@ -45,13 +45,9 @@ async def websocket_diagnosis(
     db: AsyncSession = Depends(get_db)
 ):
     from auth import verify_token
-    try:
-        payload = verify_token(token)
-        if str(payload.get("sub")) != str(user_id):
-            await websocket.close(code=4001, reason="Invalid token user mismatch")
-            return
-    except Exception:
-        await websocket.close(code=4002, reason="Invalid token")
+    payload = verify_token(token)
+    if payload is None or str(payload.get("sub")) != str(user_id):
+        await websocket.close(code=4001, reason="Invalid token")
         return
 
     await manager.connect(websocket, user_id)
