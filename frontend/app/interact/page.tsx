@@ -6,13 +6,12 @@
 
 import { useState } from 'react';
 import { Send, Zap, Heart, Sparkles } from 'lucide-react';
-import { useSoulWebSocket } from '@/hooks/usePuppySoul';  // ✅ 使用统一 Hook
+import { useSoulWebSocket } from '@/hooks/useSoulWebSocket';  // WebSocket Hook
 import SoulRadar from '@/components/SoulRadar';
 
 export default function InteractPage() {
   const [input, setInput] = useState('');
-  // ✅ 修复：useSoulWebSocket 第一个参数是 soulId 字符串，第二个是可选配置对象
-  const { sendInteraction, isConnected, soul } = useSoulWebSocket('default_mad_dog');
+  const { sendInteraction, isConnected, soul } = useSoulWebSocket({ soulId: 'default_mad_dog' });
 
   const handleSend = () => {
     if (!input.trim() || !isConnected) return;
@@ -49,15 +48,12 @@ export default function InteractPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xl font-bold text-white">{soul.name}</h3>
-                {/* ✅ 修复：使用 snake_case 字段 + 兼容 getter */}
                 <p className="text-zinc-400 text-sm">
-                  阶段: {soul.evolution_stage || soul.evolutionStage || 'puppy'} 
-                  {' • '} 
-                  {/* ✅ 修复：使用 total_interactions 或兼容字段 */}
-                  共振: {soul.total_interactions || soul.totalInteractions || 0} 次
+                  阶段: {soul.evolution_stage || 'puppy'}
+                  {' • '}
+                  共振: {soul.total_interactions || 0} 次
                 </p>
               </div>
-              {/* ✅ 修复：使用兼容的 level getter */}
               <span className="text-[#ff2d55] font-bold">
                 Lv.{soul.level || 1}
               </span>

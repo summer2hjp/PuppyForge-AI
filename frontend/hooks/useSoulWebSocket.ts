@@ -1,13 +1,19 @@
 // ✅ 修复后完整代码
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-// ✅ 严格对齐后端 snake_case 数据契约
+// ✅ 严格对齐后端 snake_case 数据契约 + 兼容字段
 export interface PuppySoul {
   soul_id: string;
   evolution_stage: string;
   total_interactions: number;
   trait_vector?: number[];
   last_active_at?: string;
+  // 兼容旧代码
+  name?: string;
+  level?: number;
+  evolutionStage?: string;
+  totalInteractions?: number;
+  personality_traits?: string[];
 }
 
 export interface SoulInteractionEvent {
@@ -65,10 +71,18 @@ export function useSoulWebSocket({
       try {
         const data: SoulInteractionEvent = JSON.parse(event.data);
 
-        // ✅ 修复: 使用类型守卫进行安全转换
+        // ✅ 修复: 使用类型守卫进行安全转换 + 填充兼容字段
         if (data.type === 'state_update' && data.payload && isPuppySoul(data.payload)) {
-          setSoul(data.payload);
-          onStateUpdate?.(data.payload);
+          const payload = data.payload;
+          setSoul({
+            ...payload,
+            name: payload.name || payload.soul_id,
+            level: payload.level || 1,
+            evolutionStage: payload.evolutionStage || payload.evolution_stage,
+            totalInteractions: payload.totalInteractions || payload.total_interactions,
+            personality_traits: payload.personality_traits || [],
+          });
+          onStateUpdate?.(payload);
         }
 
         memoryCacheRef.current = [data, ...memoryCacheRef.current].slice(0, 50);

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Text, Float
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, BigInteger, Text, Float
 from sqlalchemy.orm import relationship
 
 from models.auth import User
@@ -48,13 +48,26 @@ class PuppySoulRead(PuppySoulBase):
     updated_at: Optional[datetime] = None
 
 
+class PuppySoulDetail(PuppySoulRead):
+    """宠物面板详情响应模型（含运行时性格数据）"""
+    traits: dict = {
+        "loyalty": 65.0, "chaos": 85.0, "curiosity": 92.0,
+        "aggression": 48.0, "affection": 78.0,
+        "intelligence": 70.0, "rebellion": 30.0,
+    }
+    level: int = 1
+    total_interactions: int = 0
+    soul_fuel: float = 100.0
+    evolution_stage: str = "puppy"
+
+
 class PuppySoul(PuppySoulBase, table=True):
     """宠物档案数据库模型"""
     __tablename__ = "puppy_souls"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(..., foreign_key="users.id", index=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: int = Field(..., foreign_key="users.id", index=True, sa_type=BigInteger)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     updated_at: Optional[datetime] = Field(None)
 
     # 关系定义

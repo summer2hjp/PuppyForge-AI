@@ -4,11 +4,13 @@ import React, { Suspense, useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthModal from '@/components/AuthModal';
+import PetPanel from '@/components/PetPanel';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, Zap, AlertCircle, Loader2, LogOut, X } from 'lucide-react';
+import { usePuppySoul } from '@/hooks/usePuppySoul';
+import { Send, Zap, AlertCircle, Loader2, LogOut, X, Heart, Star, Shield } from 'lucide-react';
 
 // 动态导入 SoulRadar (禁用 SSR 以避免 hydration 错误)
-const SoulRadar = dynamic(() => import('@/components/SoulRadar'), { 
+const SoulRadar = dynamic(() => import('@/components/SoulRadar'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full min-h-[400px] flex items-center justify-center bg-zinc-900/50 rounded-2xl border border-white/10">
@@ -19,6 +21,8 @@ const SoulRadar = dynamic(() => import('@/components/SoulRadar'), {
     </div>
   )
 });
+
+// PetPanel 已拆分：名字/等级 → NavBar，能量/特质 → 左侧面板
 
 // 消息类型定义
 interface Message {
@@ -47,7 +51,8 @@ function PuppyForgeDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, logout, setUser, login } = useAuth();
-  
+  const { soul, stageMeta } = usePuppySoul();
+
   // 状态管理
   const [soulId, setSoulId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -273,6 +278,24 @@ function PuppyForgeDashboardContent() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* 宠物信息（登录后显示） */}
+            {user && soul && stageMeta && (
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-zinc-900/50 border border-white/10">
+                <span className="text-base sm:text-lg">{stageMeta.emoji}</span>
+                <span className="text-xs sm:text-sm font-semibold text-white truncate max-w-[60px] sm:max-w-none">{soul.name}</span>
+                <span className={`hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full border ${stageMeta.color} font-medium`}>
+                  {stageMeta.label}
+                </span>
+                <span className="text-[10px] sm:text-[11px] text-zinc-500 flex items-center gap-0.5 sm:gap-1">
+                  <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-yellow-500" />
+                  <span className="hidden sm:inline">Lv.</span>{soul.level}
+                </span>
+                <span className="text-[10px] sm:text-[11px] text-zinc-500 flex items-center gap-0.5 sm:gap-1">
+                  <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
+                  {soul.total_interactions}
+                </span>
+              </div>
+            )}
             {user ? (
               <>
                 <div className="hidden sm:flex items-center gap-2 text-xs font-medium bg-cyan-950/30 px-3 py-1.5 rounded-full border border-cyan-500/20 text-cyan-300">
@@ -314,115 +337,129 @@ function PuppyForgeDashboardContent() {
         </div>
       </nav>
 
-      {/* --- 主内容区：SoulRadar (始终渲染) --- */}
-      <main className="flex-1 relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col min-h-0">
-        <div className="flex-1 relative w-full h-full min-h-[300px] sm:min-h-[400px]">
-          {isProcessingOAuth ? (
-             <div className="w-full h-full flex items-center justify-center bg-zinc-900/30 rounded-2xl border border-dashed border-cyan-500/30">
-               <div className="flex flex-col items-center gap-3 text-cyan-400">
-                 <Loader2 className="w-8 h-8 animate-spin" />
-                 <span>正在同步灵魂数据...</span>
+      {/* --- 主内容区：左右布局 --- */}
+      <div className="flex-1 flex flex-row w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-0 gap-6">
+
+        {/* ===== 左侧面板（70%）：SoulRadar + PetPanel，固定不可滚动 ===== */}
+        <div className="w-[70%] flex flex-col min-h-0 overflow-hidden">
+          {/* SoulRadar */}
+          <div className="flex-1 relative min-h-0 rounded-2xl overflow-hidden border border-white/5 bg-zinc-900/30">
+            {isProcessingOAuth ? (
+               <div className="w-full h-full flex items-center justify-center">
+                 <div className="flex flex-col items-center gap-3 text-cyan-400">
+                   <Loader2 className="w-8 h-8 animate-spin" />
+                   <span>正在同步灵魂数据...</span>
+                 </div>
                </div>
-             </div>
-          ) : (
-            <SoulRadar soulId={soulId} />
-          )}
-        </div>
-      </main>
-
-      {/* --- 底部交互区 --- */}
-      <footer className="shrink-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-2">
-        {/* 错误提示 */}
-        {wsError && (
-          <div className="mb-3 p-3 bg-red-950/50 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-200 text-xs">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{wsError}</span>
-            <button onClick={() => setWsError(null)} className="ml-auto hover:text-white">×</button>
-          </div>
-        )}
-
-        {/* 消息日志 */}
-        <div className="h-32 mb-4 overflow-y-auto bg-zinc-900/50 rounded-xl border border-white/5 p-4 text-xs sm:text-sm font-mono space-y-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-          {messages.length === 0 ? (
-            <div className="text-zinc-600 text-center mt-10">
-              {user ? '等待指令...' : '请先连接灵魂以激活对话'}
-            </div>
-          ) : (
-            messages.map((msg, i) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-2 rounded-lg ${
-                  msg.role === 'user' ? 'bg-cyan-900/30 text-cyan-100 border border-cyan-500/20' : 
-                  msg.role === 'system' ? 'bg-zinc-800/50 text-zinc-400 border border-zinc-700' :
-                  'bg-zinc-800/80 text-zinc-200 border border-white/5'
-                }`}>
-                  <span className="opacity-50 text-[10px] block mb-1">{msg.role.toUpperCase()}</span>
-                  {msg.content}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* 输入框 */}
-        <div className={`relative flex items-end gap-2 bg-zinc-900/80 backdrop-blur-md p-2 rounded-2xl border transition-all duration-300 ${
-          !user ? 'border-zinc-800 opacity-60 grayscale' : 
-          isConnected ? 'border-white/10 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/50 shadow-lg' : 
-          'border-yellow-500/30'
-        }`}>
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
-              adjustTextareaHeight();
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder={user ? (isConnected ? "与灵魂对话..." : "连接中，请稍候...") : "请先连接灵魂"}
-            disabled={!user || !isConnected || isSending || isProcessingOAuth}
-            rows={1}
-            className="w-full bg-transparent border-0 text-white placeholder-zinc-500 focus:ring-0 resize-none py-3 px-3 max-h-32 min-h-[44px] scrollbar-none disabled:cursor-not-allowed"
-            style={{ height: 'auto' }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isSending || !user || !isConnected || isProcessingOAuth}
-            className="mb-1 p-3 rounded-xl bg-cyan-600 text-white disabled:bg-zinc-800 disabled:text-zinc-600 hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-900/20"
-          >
-            {isSending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Send className="w-5 h-5" />
+              <SoulRadar soulId={soulId} />
             )}
-          </button>
+          </div>
+          {/* 底部面板：宠物信息 (1/3) + 预留扩展区 (2/3) */}
+          {user && (
+            <div className="shrink-0 mt-3 flex gap-3">
+              <div className="w-1/3">
+                <PetPanel />
+              </div>
+              <div className="flex-1 rounded-xl bg-zinc-900/20 border border-dashed border-white/5 flex items-center justify-center min-h-[200px]">
+                <span className="text-xs text-zinc-600">更多组件即将到来...</span>
+              </div>
+            </div>
+          )}
         </div>
-        
-        {/* 优化后的未登录提示 */}
-        {!user && !isProcessingOAuth && (
-          <div className="mt-3 flex justify-center">
-            <div 
-              onClick={() => setShowAuth(true)}
-              className="
-                group flex items-center gap-2 
-                px-4 py-2 
-                bg-zinc-900/50 hover:bg-zinc-800/80 
-                border border-zinc-700 hover:border-cyan-500/50 
-                rounded-full 
-                cursor-pointer 
-                transition-all duration-300 
-                hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]
-                hover:-translate-y-0.5
-              "
-            >
-              <div className="w-2 h-2 rounded-full bg-zinc-500 group-hover:bg-cyan-400 transition-colors animate-pulse" />
-              <span className="text-xs text-zinc-400 group-hover:text-cyan-300 font-medium">
-                未检测到灵魂连接，请点击此处激活
-              </span>
-              <Zap className="w-3 h-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
+
+        {/* ===== 右侧面板（30%）：Agent 对话框 ===== */}
+        <div className="w-[30%] flex flex-col min-h-0 bg-zinc-900/40 rounded-2xl border border-white/5 backdrop-blur-sm">
+          {/* 对话标题栏 */}
+          <div className="shrink-0 px-4 py-3 border-b border-white/5 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-xs font-medium text-zinc-400">
+              {isConnected ? 'AI 宠物对话' : '未连接'}
+            </span>
+            {!user && (
+              <button
+                onClick={() => setShowAuth(true)}
+                className="ml-auto text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                连接灵魂 →
+              </button>
+            )}
+          </div>
+
+          {/* 错误提示 */}
+          {wsError && (
+            <div className="shrink-0 mx-3 mt-2 p-2 bg-red-950/50 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-200 text-[11px]">
+              <AlertCircle className="w-3 h-3 shrink-0" />
+              <span className="truncate">{wsError}</span>
+              <button onClick={() => setWsError(null)} className="ml-auto hover:text-white shrink-0">×</button>
+            </div>
+          )}
+
+          {/* 消息列表 */}
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
+            {messages.length === 0 ? (
+              <div className="text-zinc-600 text-center mt-8 text-xs">
+                {user
+                  ? '🐾 汪汪~ 主人，对我说点什么吧！'
+                  : '请先登录以激活对话'}
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-2.5 rounded-xl text-xs leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-cyan-600/30 text-cyan-100 border border-cyan-500/30 rounded-br-sm'
+                      : msg.role === 'system'
+                        ? 'bg-zinc-800/50 text-zinc-400 border border-zinc-700/50 text-center w-full'
+                        : 'bg-zinc-800/70 text-zinc-200 border border-white/5 rounded-bl-sm'
+                  }`}>
+                    {msg.role !== 'system' && (
+                      <span className="opacity-40 text-[10px] block mb-0.5">
+                        {msg.role === 'user' ? '你' : '🐕 Puppy'}
+                      </span>
+                    )}
+                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* 输入框 */}
+          <div className={`shrink-0 p-3 border-t border-white/5 ${
+            !user ? 'opacity-50' : ''
+          }`}>
+            <div className="relative flex items-end gap-2 bg-zinc-800/60 rounded-xl p-1.5 border border-white/5 focus-within:border-cyan-500/40 focus-within:ring-1 focus-within:ring-cyan-500/30 transition-all">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  adjustTextareaHeight();
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder={user ? (isConnected ? "和宠物说点什么..." : "连接中...") : "请先登录"}
+                disabled={!user || !isConnected || isSending || isProcessingOAuth}
+                rows={1}
+                className="w-full bg-transparent border-0 text-white placeholder-zinc-500 focus:ring-0 resize-none py-2 px-2 max-h-24 min-h-[36px] text-xs disabled:cursor-not-allowed"
+                style={{ height: 'auto' }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isSending || !user || !isConnected || isProcessingOAuth}
+                className="shrink-0 mb-0.5 p-2 rounded-lg bg-cyan-600 text-white disabled:bg-zinc-700 disabled:text-zinc-500 hover:bg-cyan-500 transition-colors"
+              >
+                {isSending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
-        )}
-      </footer>
+        </div>
+      </div>
 
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
     </div>

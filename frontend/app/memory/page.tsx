@@ -5,13 +5,12 @@
 'use client';
 
 import { Calendar, Zap, Clock } from 'lucide-react';
-import { usePuppySoul } from '@/hooks/usePuppySoul';  // ✅ 使用统一 Hook
+import { usePuppySoul } from '@/hooks/usePuppySoul';
 
 export default function MemoryPage() {
-  // ✅ 修复：usePuppySoul 返回 getRecentMemories 方法
-  const { soul, getRecentMemories } = usePuppySoul('default_mad_dog');
-  
-  // 模拟记忆数据（实际从 getRecentMemories 获取）
+  const { soul } = usePuppySoul();
+
+  // 模拟记忆数据
   const memories = [
     {
       id: 'mem_1',
@@ -50,7 +49,7 @@ export default function MemoryPage() {
               {/* ✅ 修复：使用 snake_case 字段 */}
               <span className="text-xs text-zinc-400">
                 {/* ✅ 修复：total_interactions 或兼容字段 */}
-                {soul.total_interactions || soul.totalInteractions || 0} 次共振
+                {soul.total_interactions || 0} 次共振
               </span>
             </div>
             
@@ -62,7 +61,7 @@ export default function MemoryPage() {
                 </div>
                 {/* ✅ 修复：evolution_stage 或兼容字段 */}
                 <div className="text-white font-bold text-lg">
-                  {soul.evolution_stage || soul.evolutionStage || 'puppy'}
+                  {soul.evolution_stage || 'puppy'}
                 </div>
               </div>
               <div className="p-4 bg-zinc-800 rounded-xl">

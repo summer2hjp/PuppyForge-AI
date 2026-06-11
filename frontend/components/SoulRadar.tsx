@@ -133,51 +133,11 @@ export default function SoulRadar({ soulId }: SoulRadarProps) {
         />
       </Canvas>
 
-      {/* 状态指示器 (保持不变) */}
-      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg backdrop-blur-md bg-black/20 border border-white/10 text-xs font-mono shadow-lg transition-colors duration-500">
-          <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] transition-colors duration-500 ${
-            isActive ? 'bg-cyan-400 text-cyan-400 animate-pulse' : 'bg-zinc-600 text-zinc-600'
-          }`} />
-          <span className={`tracking-wider hidden sm:inline transition-colors duration-500 ${
-            isActive ? 'text-cyan-300' : 'text-zinc-500'
-          }`}>
-            ID: {soulId || 'NULL'}
-          </span>
-          <span className={`tracking-wider sm:hidden transition-colors duration-500 ${
-            isActive ? 'text-cyan-300' : 'text-zinc-500'
-          }`}>
-            {soulId ? soulId.slice(0, 8) + '...' : 'NULL'}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg backdrop-blur-md bg-black/20 border border-white/10 text-xs font-medium shadow-lg">
-          <span className="text-zinc-400 hidden sm:inline">ENERGY</span>
-          <div className="flex items-center gap-2">
-            <div className="w-20 sm:w-24 h-1.5 bg-zinc-800/80 rounded-full overflow-hidden backdrop-blur-sm">
-              {isActive ? (
-                <div 
-                  className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_currentColor] ${
-                    intensity > 0.8 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-red-500' : 
-                    intensity > 0.5 ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-orange-500' : 
-                    'bg-gradient-to-r from-cyan-500 to-blue-500 text-cyan-500'
-                  }`}
-                  style={{ width: `${intensity * 100}%` }}
-                />
-              ) : (
-                <div className="h-full w-0 bg-zinc-600" />
-              )}
-            </div>
-            <span className={`min-w-[3rem] text-right transition-colors duration-500 ${
-              !isActive ? 'text-zinc-600' :
-              intensity > 0.8 ? 'text-red-400' : 
-              intensity > 0.5 ? 'text-orange-400' : 
-              'text-cyan-400'
-            }`}>
-              {isActive ? `${(intensity * 100).toFixed(0)}%` : 'OFF'}
-            </span>
-          </div>
-        </div>
+      {/* 激活状态指示灯 */}
+      <div className="absolute bottom-3 left-4 pointer-events-none">
+        <div className={`w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor] transition-colors duration-500 ${
+          isActive ? 'bg-cyan-400 text-cyan-400 animate-pulse' : 'bg-zinc-600 text-zinc-600'
+        }`} />
       </div>
     </div>
   );

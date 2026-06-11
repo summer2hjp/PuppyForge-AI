@@ -75,8 +75,9 @@ class Settings(BaseSettings):
     # --- 前端 URL (OAuth 回调后重定向用) ---
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-    # --- AI / 外部服务配置 (示例) ---
+    # --- AI / 外部服务配置 ---
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    OPENAI_API_BASE: Optional[str] = os.getenv("OPENAI_API_BASE")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     ANTHROPIC_API_BASE: Optional[str] = os.getenv("ANTHROPIC_API_BASE")
     QDRANT_URL: Optional[str] = os.getenv("QDRANT_URL", "http://localhost:6333")

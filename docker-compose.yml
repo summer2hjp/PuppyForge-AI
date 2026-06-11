@@ -65,6 +65,9 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-puppyforge_db}
       - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/${REDIS_DB:-0}
+      - FRONTEND_URL=${FRONTEND_URL:-https://home.huangjp520.de5.net}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-https://oauth.huangjp520.de5.net/api/v1/auth/github/callback}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://oauth.huangjp520.de5.net/api/v1/auth/google/callback}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

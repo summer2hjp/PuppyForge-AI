@@ -426,7 +426,15 @@ async def github_callback(code: str, state: str = None, db: AsyncSession = Depen
         raise HTTPException(status_code=400, detail="Missing authorization code")
 
     frontend_callback_url = settings.FRONTEND_URL
-    
+
+    # 🛡️ 生产安全守卫：记录并验证 OAuth 回调 URL
+    logger.info(f"[OAuth] 准备重定向到 FRONTEND_URL = {frontend_callback_url}")
+    if "localhost" in frontend_callback_url or "127.0.0.1" in frontend_callback_url:
+        logger.error(f"[OAuth] FRONTEND_URL 包含本地地址被拦截: {frontend_callback_url}")
+        return RedirectResponse(
+            url=f"{frontend_callback_url}/auth/callback?error=invalid_frontend_url_config"
+        )
+
     try:
         logger.info("[DEBUG Auth] 正在向 GitHub 请求 Access Token...")
         # 1. 用 code 换取 Access Token
