@@ -14,10 +14,43 @@ function AuthCallbackContent() {
   const [message, setMessage] = useState('正在同步灵魂数据...');
 
   useEffect(() => {
-    // 1. 从 URL Hash 中获取数据 (格式: #token=xxx&refreshToken=xxx&user={...})
-    const hash = window.location.hash.substring(1); // 去掉 #
+    // ═══ 情况 A: GitHub 直接回调到前端 (URL 中有 ?code=xxx) ═══
+    const code = searchParams.get('code');
+    if (code) {
+      setMessage('正在验证 GitHub 授权...');
+      const state = searchParams.get('state') || '';
+
+      fetch(`/api/auth/github-callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.token) {
+            setStatus('error');
+            setMessage(`认证失败: ${data.message || '未知错误'}`);
+            return;
+          }
+          useAuth.setState({
+            user: data.user,
+            token: data.token,
+            refreshToken: data.refreshToken,
+            loading: false,
+            error: null,
+          });
+          setStatus('success');
+          setMessage('登录成功，正在跳转...');
+          window.history.replaceState({}, document.title, '/');
+          setTimeout(() => router.push('/'), 1000);
+        })
+        .catch((err) => {
+          console.error('OAuth proxy error:', err);
+          setStatus('error');
+          setMessage('网络错误，请重试');
+        });
+      return;
+    }
+
+    // ═══ 情况 B: 后端重定向回来 (URL hash 中有 #token=xxx) ═══
+    const hash = window.location.hash.substring(1);
     if (!hash) {
-      // 如果没有 hash，检查是否有 error 参数
       const error = searchParams.get('error');
       if (error) {
         setStatus('error');
@@ -30,7 +63,6 @@ function AuthCallbackContent() {
     }
 
     try {
-      // 2. 解析 Hash 参数
       const params = new URLSearchParams(hash);
       const token = params.get('token');
       const refreshToken = params.get('refreshToken');
@@ -40,10 +72,8 @@ function AuthCallbackContent() {
         throw new Error('缺少关键认证信息');
       }
 
-      // 3. 解析用户对象
       const user = JSON.parse(decodeURIComponent(userStr));
 
-      // 4. 更新全局状态 (模拟登录成功)
       useAuth.setState({
         user,
         token,
@@ -54,15 +84,10 @@ function AuthCallbackContent() {
 
       setStatus('success');
       setMessage('登录成功，正在跳转...');
-
-      // 5. 清理 URL 并跳转首页
-      // 使用 replaceState 清除 hash，避免刷新时重复处理
       window.history.replaceState({}, document.title, window.location.pathname);
-      
       setTimeout(() => {
         router.push('/');
       }, 1000);
-
     } catch (err) {
       console.error('OAuth Callback Error:', err);
       setStatus('error');

@@ -21,10 +21,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 注入构建时环境变量 (仅 NEXT_PUBLIC_* 会打包到客户端)
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-ARG NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+ARG NEXT_PUBLIC_API_URL=https://oauth.huangjp520.de5.net/api/v1
+ARG NEXT_PUBLIC_WS_URL=ws://oauth.huangjp520.de5.net/ws
 ARG NEXT_PUBLIC_APP_NAME=PuppyForge AI
-ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+ARG NEXT_PUBLIC_BACKEND_URL=https://oauth.huangjp520.de5.net
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL \
