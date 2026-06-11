@@ -26,14 +26,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def add_security_headers(request: Request, response):
-    """添加安全头部"""
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    return response
-    
 def setup_global_exception_handlers(app: FastAPI):
     """设置全局异常处理器"""
 
@@ -86,11 +78,31 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# 添加安全头部中间件
-@app.middleware("http")
-async def security_middleware(request: Request, call_next):
-    response = await call_next(request)
-    return add_security_headers(request, response)
+# ASGI 中间件：添加安全头部（兼容 HTTP + WebSocket 双 scope）
+from starlette.types import ASGIApp, Scope, Receive, Send
+
+class SecurityHeadersMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            # WebSocket / lifespan scope 直接透传
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                message.setdefault("headers", [])
+                message["headers"].append((b"x-content-type-options", b"nosniff"))
+                message["headers"].append((b"x-frame-options", b"DENY"))
+                message["headers"].append((b"x-xss-protection", b"1; mode=block"))
+                message["headers"].append((b"strict-transport-security", b"max-age=31536000; includeSubDomains"))
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS 中间件配置
 app.add_middleware(

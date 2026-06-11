@@ -425,7 +425,7 @@ async def github_callback(code: str, state: str = None, db: AsyncSession = Depen
         logger.error("[DEBUG Auth] 错误：缺少授权码 Code")
         raise HTTPException(status_code=400, detail="Missing authorization code")
 
-    frontend_callback_url = getattr(settings, 'FRONTEND_URL', None) or settings.ALLOWED_ORIGINS.split(",")[0].strip() or "http://localhost:3000"
+    frontend_callback_url = settings.FRONTEND_URL
     
     try:
         logger.info("[DEBUG Auth] 正在向 GitHub 请求 Access Token...")

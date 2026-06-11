@@ -66,22 +66,28 @@ class Settings(BaseSettings):
     # --- OAuth2 / 第三方登录配置 ---
     GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID")
     GOOGLE_CLIENT_SECRET: Optional[str] = os.getenv("GOOGLE_CLIENT_SECRET")
-    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/auth/google/callback")
 
     GITHUB_CLIENT_ID: Optional[str] = os.getenv("GITHUB_CLIENT_ID")
     GITHUB_CLIENT_SECRET: Optional[str] = os.getenv("GITHUB_CLIENT_SECRET")
-    GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/api/auth/github/callback")
+    GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/api/v1/auth/github/callback")
+
+    # --- 前端 URL (OAuth 回调后重定向用) ---
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     # --- AI / 外部服务配置 (示例) ---
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
+    ANTHROPIC_API_BASE: Optional[str] = os.getenv("ANTHROPIC_API_BASE")
     QDRANT_URL: Optional[str] = os.getenv("QDRANT_URL", "http://localhost:6333")
     QDRANT_COLLECTION: str = "puppy_souls"
 
     # --- 日志配置 ---
     LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    
+
     # --- LLM 配置 ---
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai")
     LLM_MODEL: str = os.getenv("LLM_MODEL") or "gpt-5.3-codex"
     LLM_TEMPERATURE: float = safe_float_env("LLM_TEMPERATURE", 0.7)
     LLM_MAX_TOKENS: int = safe_int_env("LLM_MAX_TOKENS", 1024)

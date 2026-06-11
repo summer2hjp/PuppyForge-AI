@@ -136,10 +136,10 @@ function PuppyForgeDashboardContent() {
     const connectWebSocket = () => {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // 注意：这里假设后端 WS 地址，根据实际情况调整 host
-        // 生产环境建议配置 NEXT_PUBLIC_WS_URL
+        // 优先使用 NEXT_PUBLIC_WS_URL（仅 hostname），否则 fallback 到当前页面 host
+        // 后端 WebSocket 路由: /api/v1/ws/diagnosis/{user_id}?token=...
         const wsHost = process.env.NEXT_PUBLIC_WS_URL || window.location.host;
-        const wsUrl = `${protocol}//${wsHost}/api/v1/ws?soul_id=${soulId}&token=${token}`;
+        const wsUrl = `${protocol}//${wsHost}/api/v1/ws/diagnosis/${user.id}/${token}`;
         
         const ws = new WebSocket(wsUrl);
         
