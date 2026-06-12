@@ -11,6 +11,7 @@ import { fetchWithAuth } from '@/lib/api-client';
 import SoulRadar from '@/components/SoulRadar';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const INTERACT_API = `${API_BASE}/api/v1/interact/interactions`;
 
 const QUICK_TYPE_MAP: Record<string, string> = {
   '搞破坏': 'play',
@@ -25,7 +26,7 @@ const QUICK_EMOJI_MAP: Record<string, string> = {
   talk: '💬',
 };
 
-function getInteractionType(content: string): string {
+export function getInteractionType(content: string): string {
   for (const [keyword, type] of Object.entries(QUICK_TYPE_MAP)) {
     if (content.includes(keyword)) return type;
   }
@@ -57,12 +58,11 @@ export default function InteractPage() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const res = await fetchWithAuth(`${API_BASE}/api/v1/interact/`);
+      const res = await fetchWithAuth(`${INTERACT_API}/`);
       if (res.ok) {
         const data = await res.json();
         setInteractions(data);
       } else if (res.status === 401) {
-        // 未登录，显示空数据
         setInteractions([]);
       } else {
         setHistoryError(`请求失败 (${res.status})`);
@@ -74,10 +74,9 @@ export default function InteractPage() {
     }
   }, []);
 
-  // 创建互动记录
   const createInteraction = useCallback(async (content: string, interactionType: string) => {
     try {
-      const res = await fetchWithAuth(`${API_BASE}/api/v1/interact/`, {
+      const res = await fetchWithAuth(`${INTERACT_API}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,9 +87,11 @@ export default function InteractPage() {
       if (res.ok) {
         const record = await res.json();
         setInteractions(prev => [record, ...prev]);
+      } else {
+        console.warn('[Interact] POST 互动记录失败:', res.status);
       }
-    } catch {
-      // 静默失败——不打断用户交互
+    } catch (err) {
+      console.warn('[Interact] POST 互动记录异常:', err);
     }
   }, []);
 
@@ -270,7 +271,7 @@ export default function InteractPage() {
                       <span className="text-xs px-1.5 py-0.5 bg-zinc-700/60 rounded text-zinc-400 uppercase">
                         {record.interaction_type}
                       </span>
-                      {record.mood_score && (
+                      {record.mood_score != null && (
                         <span className="text-xs text-yellow-400">
                           {'❤️'.repeat(record.mood_score)}
                         </span>
