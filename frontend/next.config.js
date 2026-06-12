@@ -30,6 +30,13 @@ const nextConfig = {
   // 🔐 安全响应头 (生产环境推荐)
   async headers() {
     return [
+      // OAuth 回调页禁止缓存（含 token hash，必须实时渲染）
+      {
+        source: '/auth/callback',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, max-age=0, must-revalidate' },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [
