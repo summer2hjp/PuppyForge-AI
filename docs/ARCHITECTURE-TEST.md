@@ -50,6 +50,7 @@
 ### 2.4 E2E测试（End-to-End）
 - **框架**：Playwright
 - **核心场景**：认证流程、AI诊断流程、错误重试流程、PetMemory管理
+- **新增（2026-06-12）**：`app-integration.spec.ts` — 11个实际路由E2E测试（覆盖全部6个新模块首页/Forge/Memory/Rebel/Diagnosis/Interact/Profile + 404 + PWA Manifest），11/11 全部通过
 
 ---
 
@@ -63,7 +64,8 @@ frontend/
 │   ├── lib/                       # diagnosis, soul-websocket, vision
 │   ├── utils/                     # trait-drift
 │   ├── integration/               # auth-diagnosis-flow.test.ts
-│   └── e2e/                       # login-flow, vision-diagnosis-flow, ai-agent-*, ai-agent-error-flow
+│   ├── e2e/                       # login-flow, vision-diagnosis-flow, ai-agent-*, ai-agent-error-flow
+│   │   └── app-integration.spec.ts  # 🔥 新增：11个实际路由E2E测试
 │
 backend/
 ├── tests/
@@ -148,6 +150,7 @@ docs/
 ### 2.4 E2E测试（End-to-End）
 - **框架**：Playwright
 - **核心场景**：认证流程、AI诊断流程、错误重试流程、PetMemory管理
+- **新增（2026-06-12）**：`app-integration.spec.ts` — 11个实际路由E2E测试（覆盖全部6个新模块首页/Forge/Memory/Rebel/Diagnosis/Interact/Profile + 404 + PWA Manifest），11/11 全部通过
 
 ---
 
@@ -161,7 +164,8 @@ frontend/
 │   ├── lib/                       # diagnosis, soul-websocket, vision
 │   ├── utils/                     # trait-drift
 │   ├── integration/               # auth-diagnosis-flow.test.ts
-│   └── e2e/                       # login-flow, vision-diagnosis-flow, ai-agent-*, ai-agent-error-flow
+│   ├── e2e/                       # login-flow, vision-diagnosis-flow, ai-agent-*, ai-agent-error-flow
+│   │   └── app-integration.spec.ts  # 🔥 新增：11个实际路由E2E测试
 │
 backend/
 ├── tests/
@@ -249,5 +253,16 @@ pytest tests/test_security.py -v              # 安全测试
 3. **测试数据**：`public/test-assets/puppy-test.jpg`
 4. **持续监控**：覆盖率低于阈值时CI失败
 5. **TDD流程**：新功能先写测试再实现
+
+---
+
+## 8. 构建验证报告
+
+完整的构建验证测试记录详见 [BUILD-VERIFICATION.md](./BUILD-VERIFICATION.md)，包含：
+
+- 5 步验证流水线结果（pytest 50/50 → Jest 95/95 → Docker build → Security scan → E2E 11/11）
+- Playwright 环境配置说明（Ubuntu 26.04 + Google Chrome Stable 149）
+- 验证中修复的 4 个预存问题
+- 部署条件检查清单（8 项，6 项已通过）
 
 ---

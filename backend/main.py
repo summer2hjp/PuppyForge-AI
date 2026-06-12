@@ -16,6 +16,7 @@ from vision import router as vision_router
 from interactions import router as interact_router
 from websocket import router as ws_router
 from souls import router as soul_router
+from forge.router import router as forge_router
 
 from database import init_db, get_db, engine
 
@@ -190,6 +191,13 @@ app.include_router(
     soul_router,
     prefix="/api/v1/soul",
     tags=["Soul Management"],
+    dependencies=[Depends(verify_jwt_token)]
+)
+
+app.include_router(
+    forge_router,
+    prefix="/api/v1",
+    tags=["Forge Pipeline"],
     dependencies=[Depends(verify_jwt_token)]
 )
 

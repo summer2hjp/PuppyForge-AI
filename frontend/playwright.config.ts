@@ -19,7 +19,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        headless: false,
+        launchOptions: {
+          executablePath: '/usr/bin/google-chrome-stable',
+          args: ['--headless=new', '--no-sandbox'],
+        },
+      },
     },
     {
       name: 'firefox',
