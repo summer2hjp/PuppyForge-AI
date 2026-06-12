@@ -130,6 +130,36 @@ QA-166 审查发现的 API URL 不匹配问题：
 
 ---
 
+## Session 5 — 宠物锻造模块 (2026-06-12)
+
+### 涉及模块
+
+| 模块 | 子任务 | 文件 | 状态 |
+|------|--------|------|------|
+| 宠物锻造 (DF-13) | Forge API 路由 | `backend/forge/router.py` | 新增 |
+| 宠物锻造 (DF-13) | 路由注册 | `backend/main.py` | 修改 |
+| 宠物锻造 (DF-13) | ForgePanel 组件 | `frontend/components/ForgePanel.tsx` | 新增 |
+| 宠物锻造 (DF-13) | 组件导出 | `frontend/components/index.ts` | 修改 |
+| 宠物锻造 (DF-13) | 锻造页面 | `frontend/app/forge/page.tsx` | 重写 |
+| 宠物锻造 (DF-13) | 单元测试 | `frontend/__tests__/components/ForgePanel.test.tsx` | 新增 |
+
+### 测试覆盖
+
+| 测试文件 | 用例数 | 覆盖内容 |
+|----------|--------|----------|
+| `ForgePanel.test.tsx` | 10 | 模拟标签、输入区、按钮渲染、空提示禁用、提示输入启用、锻造进度、结果展示、评分、重置按钮、重置逻辑 |
+
+**新增**: 10 个测试用例，全部通过。
+
+### 影响面
+
+- **前端**: `frontend/components/ForgePanel.tsx` — 全新锻造面板组件；`frontend/app/forge/page.tsx` — 从 14 行占位符重写为完整锻造页面
+- **后端**: `backend/forge/router.py` — 新增 `POST /api/v1/forge/run` 路由；`backend/main.py` — 注册 forge 路由
+- **分支**: `feature/supplement-modules`（已推送）
+- **验证**: TypeScript 类型检查通过，95 项测试通过（3 个失败为预存 auth 测试），无新增 lint 警告
+
+---
+
 ## 模板
 
 每次开发完成后，按以下格式记录：
