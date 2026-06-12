@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findOrCreateOAuthUser } from '@/lib/db';
-import { signToken, signRefreshToken } from '@/lib/auth';
-import type { AuthPayload } from '@/lib/auth';
+import { signToken, signRefreshToken, type AuthPayload } from '@/lib/auth';
 
 // 注意：真实的 OAuth 流程通常需要后端先拿着 code 去 Provider (Google/GitHub) 换取用户信息。
 // 这里模拟已经获取到了用户信息的过程。在实际项目中，你需要在此处调用 Provider 的 API。

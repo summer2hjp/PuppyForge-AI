@@ -26,7 +26,7 @@ const QUICK_EMOJI_MAP: Record<string, string> = {
   talk: '💬',
 };
 
-export function getInteractionType(content: string): string {
+function getInteractionType(content: string): string {
   for (const [keyword, type] of Object.entries(QUICK_TYPE_MAP)) {
     if (content.includes(keyword)) return type;
   }

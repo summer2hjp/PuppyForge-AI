@@ -1,8 +1,7 @@
 'use client';
 
 import { Zap, Flame, Trophy, ChevronUp } from 'lucide-react';
-import type { PuppySoulDetail } from '@/hooks/usePuppySoul';
-import { EVOLUTION_META, TRAIT_CONFIG } from '@/hooks/usePuppySoul';
+import { EVOLUTION_META, TRAIT_CONFIG, type PuppySoulDetail } from '@/hooks/usePuppySoul';
 
 const EVOLUTION_ORDER = ['puppy', 'adult', 'rebel', 'legend'];
 
