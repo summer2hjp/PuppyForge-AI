@@ -103,6 +103,33 @@ QA-166 审查发现的 API URL 不匹配问题：
 
 ---
 
+## Session 4 — 叛逆模式模块 (2026-06-12)
+
+### 涉及模块
+
+| 模块 | 子任务 | 文件 | 状态 |
+|------|--------|------|------|
+| 叛逆模式 (DF-12) | RebelPanel 增强 | `frontend/components/RebelPanel.tsx` | 重写 |
+| 叛逆模式 (DF-12) | 叛逆页面 | `frontend/app/rebel/page.tsx` | 重写 |
+| 叛逆模式 (DF-12) | 单元测试 | `frontend/__tests__/components/RebelPanel.test.tsx` | 新增 |
+
+### 测试覆盖
+
+| 测试文件 | 用例数 | 覆盖内容 |
+|----------|--------|----------|
+| `RebelPanel.test.tsx` | 7 | Header 渲染、初始提示、按钮文字、思考态、结果展示、叛逆度/风险等级、错误态、Store 调用、Zustand 集成 |
+
+**新增**: 7 个测试用例，全部通过。
+
+### 影响面
+
+- **前端**: `frontend/components/RebelPanel.tsx` — 重写为使用 Skull 图标、渐变按钮、加载动画、结果卡片；`frontend/app/rebel/page.tsx` — 从 11 行占位符重写为完整页面，包含灵魂概览面板、反叛度展示
+- **后端**: 无变更
+- **分支**: `feature/supplement-modules`（已推送）
+- **验证**: TypeScript 类型检查通过，85 项测试通过（3 个失败为预存 auth 测试），无新增 lint 警告
+
+---
+
 ## 模板
 
 每次开发完成后，按以下格式记录：
