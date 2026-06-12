@@ -35,14 +35,14 @@ async def get_user_interactions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    result = await db.exec(
+    result = await db.execute(
         select(Interaction)
         .where(Interaction.user_id == current_user.id)
         .order_by(Interaction.created_at.desc())
         .offset(skip)
         .limit(limit)
     )
-    return result.all()
+    return result.scalars().all()
 
 @router.get("/{interaction_id}", response_model=InteractionRead)
 async def get_interaction(
@@ -50,13 +50,13 @@ async def get_interaction(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    result = await db.exec(
+    result = await db.execute(
         select(Interaction).where(
             Interaction.id == interaction_id,
             Interaction.user_id == current_user.id
         )
     )
-    interaction = result.first()
+    interaction = result.scalars().first()
     if not interaction:
         raise HTTPException(status_code=404, detail="互动记录不存在")
     return interaction

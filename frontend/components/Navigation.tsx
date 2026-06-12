@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 const navItems = [
   { href: '/', label: '仪表盘', icon: '📊' },
+  { href: '/interact', label: '灵魂共振', icon: '💬' },
   { href: '/profile', label: '数字档案', icon: '🐕' },
   { href: '/history', label: '记忆库', icon: '🧠' },
   { href: '/forge', label: 'Forge 工坊', icon: '⚒️' },

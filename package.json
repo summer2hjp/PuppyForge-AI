@@ -1,0 +1,25 @@
+{
+  "name": "puppyforge-ai",
+  "version": "1.0.0",
+  "description": "确保已安装 [Docker](https://docs.docker.com/engine/install/) 和 [Docker Compose](https://docs.docker.com/compose/install/)。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/summer2hjp/PuppyForge-AI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/summer2hjp/PuppyForge-AI/issues"
+  },
+  "homepage": "https://github.com/summer2hjp/PuppyForge-AI#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.3"
+  }
+}
