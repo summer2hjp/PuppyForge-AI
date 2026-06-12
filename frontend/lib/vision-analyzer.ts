@@ -2,20 +2,20 @@
 // AI 视觉分析引擎 - 多模态健康诊断核心
 // ========================================
 
-// ✅ 修复：导出正确的类型接口
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export interface VisionAnalysis {
   puppy_id: string;
   description: string;
   timestamp: string;
   image_base64?: string;
   image_url?: string;
-  // ✅ 新增：AI 分析结果字段（供组件使用）
   breed?: string;
   emotionalState?: string;
   recommendation?: string;
   summary?: string;
   healthScore?: number;
-  diagnosis?: any;
+  diagnosis?: { confidence?: number; tags?: string[] };
 }
 
 export interface VisionAnalyzerOptions {
@@ -25,43 +25,60 @@ export interface VisionAnalyzerOptions {
 }
 
 /**
- * 分析宠物照片 - 返回结构化健康诊断结果
+ * 分析宠物照片 - 调用后端视觉诊断 API
  */
 export async function analyzePetPhoto(
   file: File,
   options: VisionAnalyzerOptions = {}
 ): Promise<VisionAnalysis> {
-  const {
-    model = 'grok-vision',
-    confidence_threshold = 0.7,
-    include_metadata = true
-  } = options;
+  const { confidence_threshold = 0.7 } = options;
 
-  // 模拟 API 调用（替换为真实后端）
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  const imageBase64 = await fileToBase64(file);
 
-  // 生成唯一 ID
-  const puppy_id = `puppy_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  
-  // 模拟分析结果
-  const mockResult: VisionAnalysis = {
-    puppy_id,
-    description: '通过多模态视觉分析，该宠物表现出健康活泼的状态。',
+  const { fetchWithAuth } = await import('@/lib/api-client');
+  const res = await fetchWithAuth(`${API_BASE}/api/v1/vision/vision/diagnose`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      soul_id: 'default',
+      image: imageBase64,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`诊断请求失败 (${res.status})`);
+  }
+
+  const data = await res.json();
+
+  return {
+    puppy_id: data.soul_id || `puppy_${Date.now()}`,
+    description: data.summary || '',
     timestamp: new Date().toISOString(),
     image_url: URL.createObjectURL(file),
-    // ✅ 新增字段，供组件直接使用
-    breed: '混合品种',
-    emotionalState: 'happy',
-    recommendation: '保持当前饮食和运动习惯，建议每周进行一次健康检查。',
-    summary: '• 毛发状态: 健康有光泽\n• 眼睛状态: 明亮无分泌物\n• 行为表现: 活泼好动，反应灵敏',
-    healthScore: 92,
+    breed: data.breed,
+    emotionalState: data.emotional_state,
+    recommendation: data.recommendations?.[0] || '',
+    summary: data.summary || '',
+    healthScore: data.health_score,
     diagnosis: {
-      confidence: 0.94,
-      tags: ['healthy', 'active', 'well-groomed']
-    }
+      confidence: confidence_threshold,
+      tags: data.issues || [],
+    },
   };
+}
 
-  return mockResult;
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('文件读取失败'));
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
