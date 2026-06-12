@@ -100,7 +100,7 @@ export default function RebelPage() {
         )}
 
         {/* Rebel Panel */}
-        <RebelPanel />
+        {soul && !soulLoading && <RebelPanel soul={soul} />}
       </div>
     </div>
   );

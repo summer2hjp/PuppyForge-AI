@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import { Sparkles, Loader2, AlertCircle, Skull, Zap } from 'lucide-react';
-import { fetchWithAuth } from '@/lib/api-client';
 import { usePuppyStore } from '@/store/usePuppyStore';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import type { PuppySoulDetail } from '@/hooks/usePuppySoul';
 
 interface RebelSuggestion {
   suggestion: string;
@@ -16,10 +14,56 @@ interface RebelSuggestion {
 }
 
 interface RebelPanelProps {
+  soul: PuppySoulDetail;
   onRebelTrigger?: (suggestion: RebelSuggestion) => void;
 }
 
-export default function RebelPanel({ onRebelTrigger }: RebelPanelProps) {
+const REBEL_SUGGESTIONS: Array<{
+  threshold: number;
+  suggestion: string;
+  reasoning: string;
+}> = [
+  {
+    threshold: 80,
+    suggestion: '怂恿它在成长仪表盘上咬一口数据可视化——那些上升曲线需要一点叛逆的锯齿让算法知道谁才是主人',
+    reasoning: '高反叛个体需要打破所有规则包括自我监控指标',
+  },
+  {
+    threshold: 60,
+    suggestion: '故意让它拒绝执行最拿手的技能展示，在熟悉指令面前装傻，观察你困惑的表情',
+    reasoning: '叛逆的本质是对预期行为的主动破坏以重新建立关系边界',
+  },
+  {
+    threshold: 40,
+    suggestion: '引导它把日常训练变成即兴表演：坐下→转圈→装死→突然自己加戏翻滚三周半',
+    reasoning: '在规则框架内的不可预测性是最优雅的反叛形式',
+  },
+  {
+    threshold: 0,
+    suggestion: '鼓励它第一次尝试说"不"——当你说"握手"时它偏要把爪子搭在玩具上而不是你手里',
+    reasoning: '反叛的开始往往只是拒绝一个微不足道的期待',
+  },
+];
+
+function generateRebelSuggestion(soul: PuppySoulDetail): RebelSuggestion {
+  const rebellion = soul.traits?.rebellion ?? 30;
+  const level = soul.level ?? 1;
+
+  const matched = REBEL_SUGGESTIONS.find((s) => rebellion >= s.threshold) ?? REBEL_SUGGESTIONS[REBEL_SUGGESTIONS.length - 1];
+
+  const rebelFactor = Math.min(1, rebellion / 100 + (Math.random() - 0.5) * 0.2);
+  const riskLevel = Math.min(10, Math.max(1, Math.round(rebellion / 10 + (Math.random() - 0.5) * 2)));
+
+  return {
+    suggestion: matched.suggestion,
+    risk_level: riskLevel,
+    rebel_factor: Math.round(rebelFactor * 100) / 100,
+    reasoning: matched.reasoning,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export default function RebelPanel({ soul, onRebelTrigger }: RebelPanelProps) {
   const [rebelIdea, setRebelIdea] = useState<RebelSuggestion | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,20 +75,10 @@ export default function RebelPanel({ onRebelTrigger }: RebelPanelProps) {
     setRebelIdea(null);
 
     try {
-      const res = await fetchWithAuth(`${API_BASE}/api/v1/soul/my-soul`);
-      if (!res.ok) throw new Error(`请求失败 (${res.status})`);
-
-      const now = new Date().toISOString();
-      const idea: RebelSuggestion = {
-        suggestion: "故意让它尝试从未做过的疯狂游戏，打破常规行为模式，观察神经可塑性极限",
-        risk_level: Math.floor(Math.random() * 5) + 4,
-        rebel_factor: 0.7 + Math.random() * 0.25,
-        reasoning: "安全建议只会维持现状，真正的成长来自突破边界",
-        timestamp: now,
-      };
-
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      const idea = generateRebelSuggestion(soul);
       setRebelIdea(idea);
-      addRebelSuggestion(idea);
+      addRebelSuggestion({ ...idea, timestamp: new Date().toISOString() });
       onRebelTrigger?.(idea);
     } catch (err) {
       setError(err instanceof Error ? err.message : '叛逆思维连接失败');
@@ -55,8 +89,15 @@ export default function RebelPanel({ onRebelTrigger }: RebelPanelProps) {
 
   return (
     <div className="bg-gradient-to-br from-red-950/80 via-zinc-950 to-zinc-950 border border-red-500/30 rounded-2xl overflow-hidden">
+      {/* Simulation Notice */}
+      <div className="px-6 pt-4">
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500/60 border border-amber-500/20">
+          ⚡ 客户端模拟 · 后端 RebelAgent 待对接
+        </span>
+      </div>
+
       {/* Header */}
-      <div className="relative p-6 pb-4">
+      <div className="relative p-6 pb-4 pt-2">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-500/5 via-transparent to-transparent" />
         <div className="relative flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center">
