@@ -14,6 +14,7 @@ export { default as VisionAnalyzer } from './vision/VisionAnalyzer';
 export { default as PuppyProfileCard } from './PuppyProfile';
 export { default as HealthTrendChart } from './HealthTrendChart';
 export { GrowthArena } from './EvolutionArena';
+export { default as ForgePanel } from './ForgePanel';
 export { 
   default as NotificationToast, 
   useNotification, 
