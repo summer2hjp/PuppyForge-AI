@@ -47,6 +47,34 @@ QA-166 审查发现的 API URL 不匹配问题：
 
 ---
 
+## Session 2 — 视觉诊断模块 (2026-06-12)
+
+### 涉及模块
+
+| 模块 | 子任务 | 文件 | 状态 |
+|------|--------|------|------|
+| 视觉诊断 (DF-10) | API 连接 | `frontend/lib/vision-analyzer.ts` | 重写 |
+| 视觉诊断 (DF-10) | 诊断面板增强 | `frontend/components/DiagnosisModule.tsx` | 重写 |
+| 视觉诊断 (DF-10) | 诊断页面 | `frontend/app/diagnosis/page.tsx` | 重写 |
+| 视觉诊断 (DF-10) | 单元测试 | `frontend/__tests__/components/DiagnosisModulePanel.test.tsx` | 新增 |
+
+### 测试覆盖
+
+| 测试文件 | 用例数 | 覆盖内容 |
+|----------|--------|----------|
+| `DiagnosisModulePanel.test.tsx` | 10 | 上传区渲染、文件类型校验、预览、分析按钮、加载态、分析结果展示、错误态、健康评分颜色、重置按钮、重置逻辑 |
+
+**新增**: 10 个测试用例，全部通过。
+
+### 影响面
+
+- **前端**: `frontend/app/diagnosis/page.tsx` — 完全重写，从 10 行占位符升级为完整诊断页面；`frontend/components/DiagnosisModule.tsx` — 重写为带上传预览、文件校验、加载动画、结果展示的完整面板；`frontend/lib/vision-analyzer.ts` — 从 mock 数据改为调用后端 `POST /api/v1/vision/vision/diagnose`
+- **后端**: 无变更（VisionAgent 和 `/api/v1/vision` 已就绪）
+- **分支**: `feature/supplement-modules`（已推送）
+- **验证**: TypeScript 类型检查通过，67 项测试通过（3 个失败为预存 auth 测试），无新增 lint 警告
+
+---
+
 ## 模板
 
 每次开发完成后，按以下格式记录：
