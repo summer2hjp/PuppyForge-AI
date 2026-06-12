@@ -1,32 +1,34 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { generateTokens } from '@/lib/auth';
+import { verifyUserPassword } from '@/lib/db';
 import { jsonResponse, parseBody } from '../_utils';
-
-const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || 'http://backend:8000';
 
 export async function POST(request: NextRequest) {
   const body = await parseBody(request);
-  
+
+  if (!body?.email || !body?.password) {
+   return jsonResponse({ message: '邮箱和密码不能为空' }, 400);
+  }
+
   try {
-    const res = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+   const user = await verifyUserPassword(body.email, body.password);
+   if (!user) {
+     return jsonResponse({ message: '邮箱或密码错误' }, 401);
+   }
 
-    const data = await res.json();
+   const tokens = await generateTokens({
+     userId: user.id,
+     email: user.email,
+     role: user.role,
+   });
 
-    if (!res.ok) {
-      return jsonResponse({ message: data.detail || 'Login failed' }, res.status);
-    }
-
-    // 后端返回格式可能略有不同，需适配
-    return jsonResponse({
-      user: data.user,
-      token: data.token, // 确保字段名与 useAuth 一致
-      refreshToken: data.refreshToken
-    });
+   return jsonResponse({
+     user,
+     token: tokens.token,
+     refreshToken: tokens.refreshToken,
+   });
   } catch (error) {
-    console.error('[PROXY_LOGIN_ERROR]', error);
-    return jsonResponse({ message: 'Backend service unavailable' }, 503);
+   console.error('[LOGIN_ERROR]', error);
+   return jsonResponse({ message: '登录失败' }, 500);
   }
 }

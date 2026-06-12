@@ -26,7 +26,7 @@ const QUICK_EMOJI_MAP: Record<string, string> = {
   talk: '💬',
 };
 
-function getInteractionType(content: string): string {
+export function getInteractionType(content: string): string {
   for (const [keyword, type] of Object.entries(QUICK_TYPE_MAP)) {
     if (content.includes(keyword)) return type;
   }
@@ -192,7 +192,7 @@ export default function InteractPage() {
           </button>
 
           <button
-            onClick={() => handleQuickAction("我们来进化吧！")}
+            onClick={() => handleQuickAction("我们来促进化吧！")}
             className="p-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-xl text-cyan-300 transition flex flex-col items-center gap-2"
           >
             <Sparkles className="w-6 h-6" />

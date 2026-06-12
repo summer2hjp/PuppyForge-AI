@@ -97,6 +97,21 @@ export async function generateTokens(payload: AuthPayload): Promise<{
   return { token, refreshToken };
 }
 
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  token: string;
+  refreshToken: string;
+  user?: AuthPayload;
+} | null> {
+  const payload = await verifyToken(refreshToken);
+  if (!payload) return null;
+
+  const tokens = await generateTokens(payload);
+  return {
+    ...tokens,
+    user: payload,
+  };
+}
+
 /**
  * 验证并解码 Token
  * @param token JWT 字符串

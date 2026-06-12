@@ -1,7 +1,6 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { refreshAccessToken } from '@/lib/auth';
 import { jsonResponse, parseBody } from '../_utils';
-
-const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || 'http://backend:8000';
 
 export async function POST(request: NextRequest) {
   const body = await parseBody(request);
@@ -11,22 +10,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: body.refreshToken }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      return jsonResponse({ message: data.detail || 'Refresh failed' }, res.status);
+    const data = await refreshAccessToken(body.refreshToken);
+    if (!data) {
+      return jsonResponse({ message: 'Refresh failed' }, 401);
     }
 
     return jsonResponse({
       token: data.token,
       refreshToken: data.refreshToken,
-      user: data.user
+      user: data.user,
     });
   } catch (error) {
     return jsonResponse({ message: 'Backend service unavailable' }, 503);

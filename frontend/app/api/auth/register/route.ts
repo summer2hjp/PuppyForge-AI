@@ -1,39 +1,34 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createUser } from '@/lib/db';
+import { generateTokens } from '@/lib/auth';
 import { jsonResponse, parseBody } from '../_utils';
-
-const BACKEND_URL = process.env.INTERNAL_BACKEND_URL || 'http://backend:8000';
 
 export async function POST(request: NextRequest) {
   const body = await parseBody(request);
-  
-  // 前端已验证过，这里可做二次检查或直接转发
-  if (!body?.email || !body?.password) {
+  if (!body?.email || !body?.password || body.password !== body.confirmPassword) {
     return jsonResponse({ message: '邮箱和密码不能为空' }, 400);
   }
 
   try {
-    // 直接转发前端构造好的 { email, password, full_name }
-    const res = await fetch(`${BACKEND_URL}/api/v1/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      // FastAPI 通常返回 detail 字段
-      return jsonResponse({ message: data.detail || '注册失败' }, res.status);
+    const user = await createUser(body.email, body.password);
+    if (!user) {
+      return jsonResponse({ message: '该邮箱已被注册' }, 409);
     }
 
+    const tokens = await generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     return jsonResponse({
-      user: data.user,
-      token: data.access_token || data.token, // 兼容不同命名
-      refreshToken: data.refresh_token || data.refreshToken,
-      message: data.message
-    }, res.status);
+      user,
+      token: tokens.token,
+      refreshToken: tokens.refreshToken,
+      message: '注册成功',
+    }, 201);
   } catch (error) {
-    console.error('[PROXY_REGISTER_ERROR]', error);
-    return jsonResponse({ message: '后端服务不可用' }, 503);
+    console.error('[REGISTER_ERROR]', error);
+    return jsonResponse({ message: '注册失败' }, 500);
   }
 }
